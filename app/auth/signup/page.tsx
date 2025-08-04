@@ -9,44 +9,49 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Camera, Eye, EyeOff } from "lucide-react"
+import toast from "react-hot-toast";
 
 export default function SignupPage() {
-  const [showPassword, setShowPassword] = useState(false)
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
     confirmPassword: "",
-  })
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     // Basic validation
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match")
-      return
+      toast.error("Passwords do not match");
+      return;
     }
 
     if (formData.name && formData.email && formData.password) {
       // Store user data (in a real app, this would be server-side)
-      localStorage.setItem("isAuthenticated", "true")
-      localStorage.setItem("userEmail", formData.email)
-      localStorage.setItem("userName", formData.name)
+      localStorage.setItem("isAuthenticated", "true");
+      localStorage.setItem("userEmail", formData.email);
+      localStorage.setItem("userName", formData.name);
+
+      toast.success("Account created successfully! Redirecting to login...");
 
       // Redirect to dashboard
-      window.location.href = "/dashboard"
+      setTimeout(() => {
+        window.location.href = "/auth/login";
+      }, 1500);
     } else {
-      alert("Please fill in all fields")
+      toast.error("Please fill in all fields");
     }
-  }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({
       ...prev,
       [e.target.name]: e.target.value,
-    }))
-  }
+    }));
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 flex items-center justify-center p-4">
@@ -56,7 +61,9 @@ export default function SignupPage() {
             <Camera className="w-6 h-6 text-white" />
           </div>
           <CardTitle className="text-2xl">Create your account</CardTitle>
-          <CardDescription>Join Imagery and start organizing your photos beautifully</CardDescription>
+          <CardDescription>
+            Join Imagery and start organizing your photos beautifully
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -103,7 +110,11 @@ export default function SignupPage() {
                   className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                   onClick={() => setShowPassword(!showPassword)}
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </Button>
               </div>
             </div>
@@ -129,7 +140,10 @@ export default function SignupPage() {
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Already have an account?{" "}
-              <Link href="/auth/login" className="text-purple-600 hover:underline">
+              <Link
+                href="/auth/login"
+                className="text-purple-600 hover:underline"
+              >
                 Sign in
               </Link>
             </p>
@@ -137,5 +151,5 @@ export default function SignupPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

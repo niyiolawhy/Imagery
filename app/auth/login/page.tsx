@@ -9,27 +9,32 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Camera, Eye, EyeOff } from "lucide-react"
+import toast from "react-hot-toast";
 
 export default function LoginPage() {
-  const [showPassword, setShowPassword] = useState(false)
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     // Simple authentication check (in a real app, this would be server-side)
     if (email && password) {
       // Store user session (in a real app, use proper authentication)
-      localStorage.setItem("isAuthenticated", "true")
-      localStorage.setItem("userEmail", email)
+      localStorage.setItem("isAuthenticated", "true");
+      localStorage.setItem("userEmail", email);
+
+      toast.success("Login successful! Redirecting...");
 
       // Redirect to dashboard
-      window.location.href = "/dashboard"
+      setTimeout(() => {
+        window.location.href = "/dashboard";
+      }, 1000);
     } else {
-      alert("Please enter both email and password")
+      toast.error("Please enter both email and password");
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 flex items-center justify-center p-4">
@@ -39,7 +44,9 @@ export default function LoginPage() {
             <Camera className="w-6 h-6 text-white" />
           </div>
           <CardTitle className="text-2xl">Welcome back</CardTitle>
-          <CardDescription>Sign in to your Imagery account to access your albums</CardDescription>
+          <CardDescription>
+            Sign in to your Imagery account to access your albums
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -72,7 +79,11 @@ export default function LoginPage() {
                   className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                   onClick={() => setShowPassword(!showPassword)}
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </Button>
               </div>
             </div>
@@ -86,7 +97,10 @@ export default function LoginPage() {
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               {"Don't have an account? "}
-              <Link href="/auth/signup" className="text-purple-600 hover:underline">
+              <Link
+                href="/auth/signup"
+                className="text-purple-600 hover:underline"
+              >
                 Sign up
               </Link>
             </p>
@@ -94,5 +108,5 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
