@@ -1,31 +1,47 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Camera, Plus } from "lucide-react"
-import { AlbumCard } from "./album-card"
+import { Pagination } from "@/components/ui/pagination";
+import { Camera, Plus } from "lucide-react";
+import { AlbumCard } from "./album-card";
 
 interface Album {
-  id: number
-  name: string
-  photoCount: number
-  coverImage: string
+  id: number;
+  name: string;
+  photoCount: number;
+  coverImage: string;
 }
 
 interface AlbumsGridProps {
-  albums: Album[]
-  searchTerm: string
-  onDeleteAlbum: (albumId: number) => void
-  onCreateAlbum: () => void
+  albums: Album[];
+  searchTerm: string;
+  onDeleteAlbum: (albumId: number) => void;
+  onCreateAlbum: () => void;
+  currentPage?: number;
+  totalPages?: number;
+  onPageChange?: (page: number) => void;
 }
 
-export function AlbumsGrid({ albums, searchTerm, onDeleteAlbum, onCreateAlbum }: AlbumsGridProps) {
+export function AlbumsGrid({
+  albums,
+  searchTerm,
+  onDeleteAlbum,
+  onCreateAlbum,
+  currentPage,
+  totalPages,
+  onPageChange,
+}: AlbumsGridProps) {
   if (albums.length === 0) {
     return (
       <div className="text-center py-12">
         <Camera className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-        <h3 className="text-xl font-semibold text-gray-600 mb-2">No albums found</h3>
+        <h3 className="text-xl font-semibold text-gray-600 mb-2">
+          No albums found
+        </h3>
         <p className="text-gray-500 mb-4">
-          {searchTerm ? "Try adjusting your search terms" : "Create your first album to get started"}
+          {searchTerm
+            ? "Try adjusting your search terms"
+            : "Create your first album to get started"}
         </p>
         {!searchTerm && (
           <Button
@@ -37,14 +53,25 @@ export function AlbumsGrid({ albums, searchTerm, onDeleteAlbum, onCreateAlbum }:
           </Button>
         )}
       </div>
-    )
+    );
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      {albums.map((album) => (
-        <AlbumCard key={album.id} album={album} onDelete={onDeleteAlbum} />
-      ))}
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {albums.map((album) => (
+          <AlbumCard key={album.id} album={album} onDelete={onDeleteAlbum} />
+        ))}
+      </div>
+
+      {totalPages && totalPages > 1 && onPageChange && currentPage && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={onPageChange}
+          className="mt-8"
+        />
+      )}
     </div>
-  )
+  );
 } 

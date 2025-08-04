@@ -15,6 +15,9 @@ export function useAlbum() {
   const params = useParams()
   const { id } = params
 
+  // Track the next available ID to ensure uniqueness
+  const [nextPhotoId, setNextPhotoId] = useState(16) // Start after the initial 15 photos
+
   const [photos, setPhotos] = useState<Photo[]>([
     {
       id: 1,
@@ -64,6 +67,48 @@ export function useAlbum() {
       alt: "Snow-capped peaks",
       name: "snow-peaks.jpg",
     },
+    {
+      id: 9,
+      src: "/placeholder.svg?height=800&width=1200&text=Sunset+Over+Mountains",
+      alt: "Sunset over mountains",
+      name: "sunset-mountains.jpg",
+    },
+    {
+      id: 10,
+      src: "/placeholder.svg?height=800&width=1200&text=Golden+Hour+Portrait",
+      alt: "Golden hour portrait",
+      name: "golden-hour-portrait.jpg",
+    },
+    {
+      id: 11,
+      src: "/placeholder.svg?height=800&width=1200&text=Urban+Architecture",
+      alt: "Urban architecture",
+      name: "urban-architecture.jpg",
+    },
+    {
+      id: 12,
+      src: "/placeholder.svg?height=800&width=1200&text=Wildlife+Photography",
+      alt: "Wildlife photography",
+      name: "wildlife-photography.jpg",
+    },
+    {
+      id: 13,
+      src: "/placeholder.svg?height=800&width=1200&text=Abstract+Art",
+      alt: "Abstract art",
+      name: "abstract-art.jpg",
+    },
+    {
+      id: 14,
+      src: "/placeholder.svg?height=800&width=1200&text=Street+Photography",
+      alt: "Street photography",
+      name: "street-photography.jpg",
+    },
+    {
+      id: 15,
+      src: "/placeholder.svg?height=800&width=1200&text=Macro+Nature",
+      alt: "Macro nature",
+      name: "macro-nature.jpg",
+    },
   ])
 
   const [searchTerm, setSearchTerm] = useState("")
@@ -74,6 +119,8 @@ export function useAlbum() {
   const [isUploading, setIsUploading] = useState(false)
   const [zoomLevel, setZoomLevel] = useState(1)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
   
   const fileInputRef = useRef<HTMLInputElement>(null)
   const autoPlayRef = useRef<NodeJS.Timeout | null>(null)
@@ -84,6 +131,13 @@ export function useAlbum() {
   const filteredPhotos = photos.filter((photo) =>
     photo.alt.toLowerCase().includes(searchTerm.toLowerCase())
   )
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredPhotos.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedPhotos = filteredPhotos.slice(startIndex, endIndex)
+
   const currentPhoto = filteredPhotos[currentPhotoIndex]
 
   // Auto-play functionality
@@ -247,8 +301,9 @@ export function useAlbum() {
     try {
       const newPhotos = Array.from(files).map((file, index) => {
         const url = URL.createObjectURL(file)
+        const newId = nextPhotoId + index
         return {
-          id: photos.length + index + 1,
+          id: newId,
           src: url,
           alt: file.name.split(".")[0].replace(/[-_]/g, " "),
           name: file.name,
@@ -256,6 +311,7 @@ export function useAlbum() {
       })
 
       setPhotos((prev) => [...prev, ...newPhotos])
+      setNextPhotoId(nextPhotoId + files.length)
       toast.success(
         `${files.length} photo${
           files.length > 1 ? "s" : ""
@@ -362,6 +418,10 @@ export function useAlbum() {
     }
   }
 
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+  }
+
   return {
     // State
     photos,
@@ -377,7 +437,10 @@ export function useAlbum() {
     albumName,
     albumUrl,
     filteredPhotos,
+    paginatedPhotos,
     currentPhoto,
+    currentPage,
+    totalPages,
     
     // Actions
     setSearchTerm,
@@ -398,5 +461,6 @@ export function useAlbum() {
     handleDownloadAll,
     handleCopyLink,
     handleSocialShare,
+    handlePageChange,
   }
 } 

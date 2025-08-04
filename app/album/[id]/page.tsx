@@ -24,7 +24,10 @@ export default function AlbumPage() {
     albumName,
     albumUrl,
     filteredPhotos,
+    paginatedPhotos,
     currentPhoto,
+    currentPage,
+    totalPages,
 
     // Actions
     setSearchTerm,
@@ -45,12 +48,12 @@ export default function AlbumPage() {
     handleDownloadAll,
     handleCopyLink,
     handleSocialShare,
+    handlePageChange,
   } = useAlbum();
 
   return (
     <AuthGuard>
       <div className="min-h-screen bg-gray-50">
-        {/* Hidden file input */}
         <input
           ref={fileInputRef}
           type="file"
@@ -59,11 +62,7 @@ export default function AlbumPage() {
           onChange={handleFileUpload}
           className="hidden"
         />
-
-        {/* Header */}
         <AppHeader searchTerm={searchTerm} onSearchChange={setSearchTerm} />
-
-        {/* Album Header */}
         <AlbumHeader
           albumName={albumName}
           photoCount={photos.length}
@@ -72,20 +71,19 @@ export default function AlbumPage() {
           onUpload={handleUploadClick}
           isUploading={isUploading}
         />
-
-        {/* Photos Grid */}
         <main className="container mx-auto px-4 py-8">
           <PhotoGrid
-            photos={photos}
+            photos={paginatedPhotos}
             searchTerm={searchTerm}
             onPhotoClick={openSlideShow}
             onDownloadPhoto={handleDownloadPhoto}
             onDeletePhoto={handleDeletePhoto}
             onUpload={handleUploadClick}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
           />
         </main>
-
-        {/* Slideshow Modal */}
         <SlideshowModal
           isOpen={isSlideShowOpen}
           onClose={closeSlideShow}
@@ -104,8 +102,6 @@ export default function AlbumPage() {
           onToggleFullscreen={toggleFullscreen}
           onDownloadPhoto={handleDownloadPhoto}
         />
-
-        {/* Share Dialog */}
         <ShareDialog
           isOpen={showShareDialog}
           onClose={() => setShowShareDialog(false)}

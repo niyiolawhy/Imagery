@@ -12,11 +12,14 @@ export default function DashboardPage() {
     searchTerm,
     newAlbumName,
     isDialogOpen,
+    currentPage,
+    totalPages,
     handleCreateAlbum,
     handleDeleteAlbum,
     handleSearchChange,
     handleAlbumNameChange,
     handleDialogOpenChange,
+    handlePageChange,
   } = useDashboard();
 
   return (
@@ -53,6 +56,9 @@ export default function DashboardPage() {
             searchTerm={searchTerm}
             onDeleteAlbum={handleDeleteAlbum}
             onCreateAlbum={() => handleDialogOpenChange(true)}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
           />
         </main>
       </div>

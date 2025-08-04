@@ -18,15 +18,29 @@ export function useDashboard() {
     { id: 4, name: "City Adventures", photoCount: 18, coverImage: "/placeholder.svg?height=200&width=300" },
     { id: 5, name: "Wedding Memories", photoCount: 45, coverImage: "/placeholder.svg?height=200&width=300" },
     { id: 6, name: "Pet Photos", photoCount: 8, coverImage: "/placeholder.svg?height=200&width=300" },
+    { id: 7, name: "Food Photography", photoCount: 15, coverImage: "/placeholder.svg?height=200&width=300" },
+    { id: 8, name: "Travel Diary", photoCount: 32, coverImage: "/placeholder.svg?height=200&width=300" },
+    { id: 9, name: "Street Art", photoCount: 20, coverImage: "/placeholder.svg?height=200&width=300" },
+    { id: 10, name: "Wildlife Safari", photoCount: 28, coverImage: "/placeholder.svg?height=200&width=300" },
+    { id: 11, name: "Architecture Tour", photoCount: 16, coverImage: "/placeholder.svg?height=200&width=300" },
+    { id: 12, name: "Beach Memories", photoCount: 22, coverImage: "/placeholder.svg?height=200&width=300" },
   ])
 
   const [searchTerm, setSearchTerm] = useState("")
   const [newAlbumName, setNewAlbumName] = useState("")
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
 
   const filteredAlbums = albums.filter((album) =>
     album.name.toLowerCase().includes(searchTerm.toLowerCase())
   )
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredAlbums.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedAlbums = filteredAlbums.slice(startIndex, endIndex)
 
   const handleCreateAlbum = () => {
     if (newAlbumName.trim()) {
@@ -71,12 +85,18 @@ export function useDashboard() {
     setIsDialogOpen(open)
   }
 
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+  }
+
   return {
     // State
-    albums: filteredAlbums,
+    albums: paginatedAlbums,
     searchTerm,
     newAlbumName,
     isDialogOpen,
+    currentPage,
+    totalPages,
     
     // Actions
     handleCreateAlbum,
@@ -84,5 +104,6 @@ export function useDashboard() {
     handleSearchChange,
     handleAlbumNameChange,
     handleDialogOpenChange,
+    handlePageChange,
   }
 } 
