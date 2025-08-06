@@ -2,7 +2,7 @@ import axios from "axios";
 import { toast } from "sonner";
 
 
-export const baseUrl = "";
+export const baseUrl = "http://localhost:4000/";
 
 const axiosInstance = axios.create({
     baseURL: baseUrl,
@@ -52,7 +52,7 @@ const handleError = async (error: any) => {
         toast.dismiss();
 
         // Check if we're already on the login page
-        const isOnLoginPage = window.location.pathname === "/login/";
+        const isOnLoginPage = window.location.pathname === "/auth/login";
 
         if (isOnLoginPage) {
             // Already on login page, just show toast
@@ -63,7 +63,7 @@ const handleError = async (error: any) => {
         } else {
             // Not on login page, redirect to login
             localStorage.clear();
-            window.location.href = "/login";
+            window.location.href = "/auth/login";
         }
     }
 

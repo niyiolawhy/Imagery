@@ -4,6 +4,8 @@ import type React from "react"
 
 import { useState } from "react"
 import Link from "next/link"
+import { Formik, Form, Field, ErrorMessage } from "formik";
+import * as Yup from "yup";
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -11,19 +13,35 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Camera, Eye, EyeOff } from "lucide-react"
 import toast from "react-hot-toast";
 
+// Validation schema
+const LoginSchema = Yup.object().shape({
+  email: Yup.string()
+    .email("Invalid email address")
+    .required("Email is required"),
+  password: Yup.string()
+    .min(6, "Password must be at least 6 characters")
+    .required("Password is required"),
+});
+
+interface LoginFormValues {
+  email: string;
+  password: string;
+}
+
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const initialValues: LoginFormValues = {
+    email: "",
+    password: "",
+  };
 
+  const handleSubmit = (values: LoginFormValues, { setSubmitting }: any) => {
     // Simple authentication check (in a real app, this would be server-side)
-    if (email && password) {
+    if (values.email && values.password) {
       // Store user session (in a real app, use proper authentication)
       localStorage.setItem("isAuthenticated", "true");
-      localStorage.setItem("userEmail", email);
+      localStorage.setItem("userEmail", values.email);
 
       toast.success("Login successful! Redirecting...");
 
@@ -34,6 +52,7 @@ export default function LoginPage() {
     } else {
       toast.error("Please enter both email and password");
     }
+    setSubmitting(false);
   };
 
   return (
@@ -49,51 +68,78 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
+          <Formik
+            initialValues={initialValues}
+            validationSchema={LoginSchema}
+            onSubmit={handleSubmit}
+          >
+            {({ isSubmitting, values, setFieldValue }) => (
+              <Form className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Field
+                    as={Input}
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="Enter your email"
+                    required
+                  />
+                  <ErrorMessage
+                    name="email"
+                    component="div"
+                    className="text-sm text-red-500 mt-1"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Field
+                      as={Input}
+                      id="password"
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Enter your password"
+                      required
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                  <ErrorMessage
+                    name="password"
+                    component="div"
+                    className="text-sm text-red-500 mt-1"
+                  />
+                  <div className="text-right">
+                    <Link
+                      href="/auth/forgot-password"
+                      className="text-sm text-purple-600 hover:underline"
+                    >
+                      Forgot password?
+                    </Link>
+                  </div>
+                </div>
                 <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                  onClick={() => setShowPassword(!showPassword)}
+                  type="submit"
+                  className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                  disabled={isSubmitting}
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
+                  {isSubmitting ? "Signing in..." : "Sign In"}
                 </Button>
-              </div>
-            </div>
-            <Button
-              type="submit"
-              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-            >
-              Sign In
-            </Button>
-          </form>
+              </Form>
+            )}
+          </Formik>
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               {"Don't have an account? "}
