@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Camera, Mail } from "lucide-react"
 import toast from "react-hot-toast";
+import { usePostData } from "@/hooks/use-api";
 
 // Validation schema
 const ForgotPasswordSchema = Yup.object().shape({
@@ -28,17 +29,22 @@ export default function ForgotPasswordPage() {
     email: "",
   };
 
-  const handleSubmit = async (values: ForgotPasswordFormValues, { setSubmitting, resetForm }: any) => {
+  const forgotPasswordMutation = usePostData("/auth/forgot-password");
+
+  const handleSubmit = async (
+    values: ForgotPasswordFormValues,
+    { setSubmitting, resetForm }: any
+  ) => {
     try {
-      // Simulate API call for password reset
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      await forgotPasswordMutation.mutateAsync({ email: values.email });
       toast.success("Password reset email sent! Check your inbox.");
-      
-      // Reset form
       resetForm();
-    } catch (error) {
-      toast.error("Failed to send reset email. Please try again.");
+    } catch (error: any) {
+      toast.error(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Failed to send reset email. Please try again."
+      );
     } finally {
       setSubmitting(false);
     }
@@ -53,7 +59,8 @@ export default function ForgotPasswordPage() {
           </div>
           <CardTitle className="text-2xl">Forgot Password</CardTitle>
           <CardDescription>
-            Enter your email address and we'll send you a link to reset your password
+            Enter your email address and we'll send you a link to reset your
+            password
           </CardDescription>
         </CardHeader>
         <CardContent>

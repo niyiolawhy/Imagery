@@ -5,54 +5,52 @@ import type React from "react"
 import { useState } from "react"
 import Link from "next/link"
 import { Formik, Form, Field, ErrorMessage } from "formik";
-import * as Yup from "yup";
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Camera, Eye, EyeOff } from "lucide-react"
+import { usePostData } from "@/hooks/use-api";
+import { LoginSchema } from "@/schemas/login";
+import { LoginFormValues } from "@/types/login";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Camera, Eye, EyeOff } from "lucide-react";
 import toast from "react-hot-toast";
+import { setToken } from "@/services/axios-instance";
+import { useRouter } from "next/navigation";
 
-// Validation schema
-const LoginSchema = Yup.object().shape({
-  email: Yup.string()
-    .email("Invalid email address")
-    .required("Email is required"),
-  password: Yup.string()
-    .min(6, "Password must be at least 6 characters")
-    .required("Password is required"),
-});
-
-interface LoginFormValues {
-  email: string;
-  password: string;
-}
+const handleSubmit = async (
+  values: LoginFormValues,
+  { setSubmitting }: any,
+  loginMutation: any,
+  router: any
+) => {
+  try {
+    const res = await loginMutation?.mutateAsync?.(values);
+    toast.success("Login successful! Redirecting...");
+    setToken(res.data.token, res.data.refreshToken);
+    localStorage.setItem("isAuthenticated", "true");
+    setTimeout(() => {
+      router.push("/dashboard");
+    }, 1000);
+  } catch (error: any) {
+    toast.error(error?.response?.data?.message || "Login failed");
+  } finally {
+    setSubmitting?.(false);
+  }
+};
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
-
+  const loginMutation = usePostData("/auth/login");
+  const router = useRouter();
   const initialValues: LoginFormValues = {
-    email: "",
+    username: "",
     password: "",
-  };
-
-  const handleSubmit = (values: LoginFormValues, { setSubmitting }: any) => {
-    // Simple authentication check (in a real app, this would be server-side)
-    if (values.email && values.password) {
-      // Store user session (in a real app, use proper authentication)
-      localStorage.setItem("isAuthenticated", "true");
-      localStorage.setItem("userEmail", values.email);
-
-      toast.success("Login successful! Redirecting...");
-
-      // Redirect to dashboard
-      setTimeout(() => {
-        window.location.href = "/dashboard";
-      }, 1000);
-    } else {
-      toast.error("Please enter both email and password");
-    }
-    setSubmitting(false);
   };
 
   return (
@@ -71,22 +69,24 @@ export default function LoginPage() {
           <Formik
             initialValues={initialValues}
             validationSchema={LoginSchema}
-            onSubmit={handleSubmit}
+            onSubmit={(values, actions) =>
+              handleSubmit(values, actions, loginMutation, router)
+            }
           >
             {({ isSubmitting, values, setFieldValue }) => (
               <Form className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="username">Username</Label>
                   <Field
                     as={Input}
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder="Enter your email"
+                    id="username"
+                    name="username"
+                    type="text"
+                    placeholder="Enter your username"
                     required
                   />
                   <ErrorMessage
-                    name="email"
+                    name="username"
                     component="div"
                     className="text-sm text-red-500 mt-1"
                   />
@@ -133,9 +133,11 @@ export default function LoginPage() {
                 <Button
                   type="submit"
                   className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || loginMutation.isPending}
                 >
-                  {isSubmitting ? "Signing in..." : "Sign In"}
+                  {isSubmitting || loginMutation.isPending
+                    ? "Signing in..."
+                    : "Sign In"}
                 </Button>
               </Form>
             )}

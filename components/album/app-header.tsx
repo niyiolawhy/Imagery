@@ -11,14 +11,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ArrowLeft, Camera, LogOut, Search, Settings, User } from "lucide-react"
+import { ArrowLeft, LogOut, Search, User } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface AppHeaderProps {
-  searchTerm: string
-  onSearchChange: (value: string) => void
+  searchTerm: string;
+  onSearchChange: (value: string) => void;
 }
 
 export function AppHeader({ searchTerm, onSearchChange }: AppHeaderProps) {
+  const router = useRouter();
   return (
     <header className="bg-white border-b">
       <div className="container mx-auto px-4 py-4">
@@ -30,14 +32,6 @@ export function AppHeader({ searchTerm, onSearchChange }: AppHeaderProps) {
                 Back to Albums
               </Button>
             </Link>
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg flex items-center justify-center">
-                <Camera className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                Imagery
-              </span>
-            </div>
           </div>
 
           <div className="flex items-center space-x-4">
@@ -67,21 +61,21 @@ export function AppHeader({ searchTerm, onSearchChange }: AppHeaderProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end" forceMount>
-                <DropdownMenuItem>
-                  <User className="mr-2 h-4 w-4" />
-                  <span>Profile</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
-                </DropdownMenuItem>
+                <Link href="/profile" passHref legacyBehavior>
+                  <DropdownMenuItem asChild>
+                    <a>
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Profile</span>
+                    </a>
+                  </DropdownMenuItem>
+                </Link>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => {
-                    localStorage.removeItem("isAuthenticated")
-                    localStorage.removeItem("userEmail")
-                    localStorage.removeItem("userName")
-                    window.location.href = "/auth/login"
+                    localStorage.removeItem("isAuthenticated");
+                    localStorage.removeItem("userEmail");
+                    localStorage.removeItem("userName");
+                    router.push("/auth/login");
                   }}
                 >
                   <LogOut className="mr-2 h-4 w-4" />
@@ -93,5 +87,5 @@ export function AppHeader({ searchTerm, onSearchChange }: AppHeaderProps) {
         </div>
       </div>
     </header>
-  )
+  );
 } 

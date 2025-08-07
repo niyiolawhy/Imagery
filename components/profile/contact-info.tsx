@@ -15,13 +15,25 @@ interface Profile {
 }
 
 interface ContactInfoProps {
-  profile: Profile
-  editedProfile: Profile
-  isEditing: boolean
-  onProfileChange: (profile: Profile) => void
+  profile: Profile | null;
+  editedProfile: Profile | null;
+  isEditing: boolean;
+  onProfileChange: (profile: Profile) => void;
 }
 
-export function ContactInfo({ profile, editedProfile, isEditing, onProfileChange }: ContactInfoProps) {
+export function ContactInfo({ profile }: { profile: Profile | null }) {
+  if (!profile) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <p className="text-lg text-gray-500 mb-4">
+          No contact information found.
+        </p>
+        <p className="text-gray-400">
+          Please enter your contact details to get started.
+        </p>
+      </div>
+    );
+  }
   return (
     <Card>
       <CardHeader>
@@ -32,63 +44,29 @@ export function ContactInfo({ profile, editedProfile, isEditing, onProfileChange
         <div className="grid gap-4">
           <div className="flex items-center space-x-3">
             <Mail className="w-5 h-5 text-gray-400" />
-            {isEditing ? (
-              <div className="flex-1">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={editedProfile.email}
-                  onChange={(e) => onProfileChange({ ...editedProfile, email: e.target.value })}
-                />
-              </div>
-            ) : (
-              <div>
-                <p className="font-medium">Email</p>
-                <p className="text-gray-600">{profile.email}</p>
-              </div>
-            )}
+            <div>
+              <p className="font-medium">Email</p>
+              <p className="text-gray-600">{profile.email}</p>
+            </div>
           </div>
 
           <div className="flex items-center space-x-3">
             <Phone className="w-5 h-5 text-gray-400" />
-            {isEditing ? (
-              <div className="flex-1">
-                <Label htmlFor="phone">Phone</Label>
-                <Input
-                  id="phone"
-                  value={editedProfile.phone}
-                  onChange={(e) => onProfileChange({ ...editedProfile, phone: e.target.value })}
-                />
-              </div>
-            ) : (
-              <div>
-                <p className="font-medium">Phone</p>
-                <p className="text-gray-600">{profile.phone}</p>
-              </div>
-            )}
+            <div>
+              <p className="font-medium">Phone</p>
+              <p className="text-gray-600">{profile.phone}</p>
+            </div>
           </div>
 
           <div className="flex items-center space-x-3">
             <MapPin className="w-5 h-5 text-gray-400" />
-            {isEditing ? (
-              <div className="flex-1">
-                <Label htmlFor="location">Location</Label>
-                <Input
-                  id="location"
-                  value={editedProfile.location}
-                  onChange={(e) => onProfileChange({ ...editedProfile, location: e.target.value })}
-                />
-              </div>
-            ) : (
-              <div>
-                <p className="font-medium">Location</p>
-                <p className="text-gray-600">{profile.location}</p>
-              </div>
-            )}
+            <div>
+              <p className="font-medium">Location</p>
+              <p className="text-gray-600">{profile.location}</p>
+            </div>
           </div>
         </div>
       </CardContent>
     </Card>
-  )
+  );
 } 

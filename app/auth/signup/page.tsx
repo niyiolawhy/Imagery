@@ -16,74 +16,82 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Camera,
-  Eye,
-  EyeOff,
-  User,
-  Calendar,
-  Image,
-  Upload,
-  X,
-} from "lucide-react";
-import toast from "react-hot-toast";
-import { usePostData, useUploadData } from "@/hooks/use-api";
+import { Camera, Eye, EyeOff, User, Calendar, Upload, X } from "lucide-react";
+import { useUploadData } from "@/hooks/use-api";
+import { SignupSchema } from "@/schemas/signup";
+import { SignupFormValues } from "@/types/signup";
+import { useRouter } from "next/navigation";
 
-const SignupSchema = Yup.object().shape({
-  name: Yup.string()
-    .min(2, "Name must be at least 2 characters")
-    .required("Full name is required"),
-  username: Yup.string()
-    .min(3, "Username must be at least 3 characters")
-    .matches(
-      /^[a-zA-Z0-9_]+$/,
-      "Username can only contain letters, numbers, and underscores"
-    )
-    .required("Username is required"),
-  email: Yup.string()
-    .email("Invalid email address")
-    .required("Email is required"),
-  password: Yup.string()
-    .min(6, "Password must be at least 6 characters")
-    .matches(
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-      "Password must contain at least one uppercase letter, one lowercase letter, and one number"
-    )
-    .required("Password is required"),
-  confirmPassword: Yup.string()
-    .oneOf([Yup.ref("password")], "Passwords must match")
-    .required("Please confirm your password"),
-  dob: Yup.date()
-    .max(new Date(), "Date of birth cannot be in the future")
-    .required("Date of birth is required"),
-  avatarFile: Yup.mixed()
-    .test("fileSize", "File size must be less than 5MB", (value) => {
-      if (!value) return true;
-      return (value as File).size <= 5 * 1024 * 1024;
-    })
-    .test("fileType", "Only image files are allowed", (value) => {
-      if (!value) return true;
-      return ["image/jpeg", "image/png", "image/gif", "image/webp"].includes(
-        (value as File).type
-      );
-    })
-    .optional(),
-});
+const handleAvatarChange = (
+  event: React.ChangeEvent<HTMLInputElement>,
+  setFieldValue: (field: string, value: any) => void,
+  setAvatarPreview: React.Dispatch<React.SetStateAction<string | null>>
+) => {
+  const file = event.target.files?.[0];
+  if (file) {
+    setFieldValue("avatarFile", file);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setAvatarPreview(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  }
+};
 
-interface SignupFormValues {
-  name: string;
-  username: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-  dob: string;
-  avatarFile?: File | null;
-}
+const removeAvatar = (
+  setFieldValue: (field: string, value: any) => void,
+  setAvatarPreview: React.Dispatch<React.SetStateAction<string | null>>
+) => {
+  setFieldValue("avatarFile", null);
+  setAvatarPreview(null);
+};
+
+const handleSubmit = async (
+  values: SignupFormValues,
+  { setSubmitting, resetForm }: any,
+  registerMutation: any,
+  setAvatarPreview: React.Dispatch<React.SetStateAction<string | null>>,
+  router: any
+) => {
+  try {
+    const formData = new FormData();
+    formData.append("name", values.name);
+    formData.append("username", values.username);
+    formData.append("email", values.email);
+    formData.append("password", values.password);
+    formData.append("confirmPassword", values.confirmPassword);
+    formData.append("dob", values.dob);
+    if (values.avatarFile) {
+      formData.append("avatar", values.avatarFile);
+    }
+    await registerMutation?.mutateAsync?.(formData);
+    resetForm?.();
+    setAvatarPreview?.(null);
+    router.push("/auth/login");
+  } catch (error: any) {
+    if (error?.message?.includes("avatar") && values.avatarFile) {
+      const formDataWithoutAvatar = new FormData();
+      formDataWithoutAvatar.append("name", values.name);
+      formDataWithoutAvatar.append("username", values.username);
+      formDataWithoutAvatar.append("email", values.email);
+      formDataWithoutAvatar.append("password", values.password);
+      formDataWithoutAvatar.append("confirmPassword", values.confirmPassword);
+      formDataWithoutAvatar.append("dob", values.dob);
+      await registerMutation?.mutateAsync?.(formDataWithoutAvatar);
+      resetForm?.();
+      setAvatarPreview?.(null);
+      router.push("/auth/login");
+    }
+  } finally {
+    setSubmitting?.(false);
+  }
+};
 
 export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const registerMutation = useUploadData("/auth/register");
+  const router = useRouter();
 
   const initialValues: SignupFormValues = {
     name: "",
@@ -93,69 +101,6 @@ export default function SignupPage() {
     confirmPassword: "",
     dob: "",
     avatarFile: null,
-  };
-
-  const handleAvatarChange = (
-    event: React.ChangeEvent<HTMLInputElement>,
-    setFieldValue: (field: string, value: any) => void
-  ) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setFieldValue("avatarFile", file);
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setAvatarPreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const removeAvatar = (setFieldValue: (field: string, value: any) => void) => {
-    setFieldValue("avatarFile", null);
-    setAvatarPreview(null);
-  };
-
-  const handleSubmit = async (
-    values: SignupFormValues,
-    { setSubmitting, resetForm }: any
-  ) => {
-    try {
-      const formData = new FormData();
-      formData.append("name", values.name);
-      formData.append("username", values.username);
-      formData.append("email", values.email);
-      formData.append("password", values.password);
-      formData.append("confirmPassword", values.confirmPassword);
-      formData.append("dob", values.dob);
-
-      if (values.avatarFile) {
-        formData.append("avatar", values.avatarFile);
-      }
-
-      await registerMutation.mutateAsync(formData);
-      resetForm();
-      setAvatarPreview(null);
-      window.location.href = "/auth/login";
-    } catch (error: any) {
-      if (error.message?.includes("avatar") && values.avatarFile) {
-        const formDataWithoutAvatar = new FormData();
-        formDataWithoutAvatar.append("name", values.name);
-        formDataWithoutAvatar.append("username", values.username);
-        formDataWithoutAvatar.append("email", values.email);
-        formDataWithoutAvatar.append("password", values.password);
-        formDataWithoutAvatar.append("confirmPassword", values.confirmPassword);
-        formDataWithoutAvatar.append("dob", values.dob);
-
-        await registerMutation.mutateAsync(formDataWithoutAvatar);
-
-        resetForm();
-        setAvatarPreview(null);
-        window.location.href = "/auth/login";
-      }
-    } finally {
-      setSubmitting(false);
-    }
   };
 
   return (
@@ -174,7 +119,15 @@ export default function SignupPage() {
           <Formik
             initialValues={initialValues}
             validationSchema={SignupSchema}
-            onSubmit={handleSubmit}
+            onSubmit={(values, actions) =>
+              handleSubmit(
+                values,
+                actions,
+                registerMutation,
+                setAvatarPreview,
+                router
+              )
+            }
           >
             {({ isSubmitting, setFieldValue }) => (
               <Form className="space-y-4 ">
@@ -263,7 +216,9 @@ export default function SignupPage() {
                           variant="destructive"
                           size="sm"
                           className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
-                          onClick={() => removeAvatar(setFieldValue)}
+                          onClick={() =>
+                            removeAvatar(setFieldValue, setAvatarPreview)
+                          }
                         >
                           <X className="h-3 w-3" />
                         </Button>
@@ -277,7 +232,13 @@ export default function SignupPage() {
                           type="file"
                           accept="image/*"
                           className="pl-10 cursor-pointer"
-                          onChange={(e) => handleAvatarChange(e, setFieldValue)}
+                          onChange={(e) =>
+                            handleAvatarChange(
+                              e,
+                              setFieldValue,
+                              setAvatarPreview
+                            )
+                          }
                         />
                       </div>
                     )}

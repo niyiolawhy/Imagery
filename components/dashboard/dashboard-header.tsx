@@ -11,8 +11,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Camera, LogOut, Search, Settings, User } from "lucide-react"
-import toast from "react-hot-toast"
+import { Camera, LogOut, Search, User } from "lucide-react";
+import { useRouter } from "next/navigation"
 
 interface DashboardHeaderProps {
   searchTerm: string
@@ -20,15 +20,8 @@ interface DashboardHeaderProps {
 }
 
 export function DashboardHeader({ searchTerm, onSearchChange }: DashboardHeaderProps) {
-  const handleLogout = () => {
-    localStorage.removeItem("isAuthenticated")
-    localStorage.removeItem("userEmail")
-    localStorage.removeItem("userName")
-    toast.success("Logged out successfully!")
-    setTimeout(() => {
-      window.location.href = "/auth/login"
-    }, 1000)
-  }
+  const router = useRouter();
+
 
   return (
     <header className="bg-white border-b">
@@ -47,7 +40,7 @@ export function DashboardHeader({ searchTerm, onSearchChange }: DashboardHeaderP
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
-                placeholder="Search albums..."
+                placeholder="Search photos..."
                 value={searchTerm}
                 onChange={(e) => onSearchChange(e.target.value)}
                 className="pl-10 w-64"
@@ -56,24 +49,37 @@ export function DashboardHeader({ searchTerm, onSearchChange }: DashboardHeaderP
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                <Button
+                  variant="ghost"
+                  className="relative h-8 w-8 rounded-full"
+                >
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
+                    <AvatarImage
+                      src="/placeholder.svg?height=32&width=32"
+                      alt="User"
+                    />
                     <AvatarFallback>JD</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end" forceMount>
-                <DropdownMenuItem>
-                  <User className="mr-2 h-4 w-4" />
-                  <span>Profile</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
-                </DropdownMenuItem>
+                <Link href="/profile" passHref legacyBehavior>
+                  <DropdownMenuItem asChild>
+                    <a>
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Profile</span>
+                    </a>
+                  </DropdownMenuItem>
+                </Link>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout}>
+                <DropdownMenuItem
+                  onClick={() => {
+                    localStorage.removeItem("isAuthenticated");
+                    localStorage.removeItem("userEmail");
+                    localStorage.removeItem("userName");
+                    router.push("/auth/login");
+                  }}
+                >
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Log out</span>
                 </DropdownMenuItem>
@@ -83,5 +89,5 @@ export function DashboardHeader({ searchTerm, onSearchChange }: DashboardHeaderP
         </div>
       </div>
     </header>
-  )
+  );
 } 
