@@ -6,20 +6,15 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Plus } from "lucide-react"
 import toast from "react-hot-toast"
-
-interface Album {
-  id: number
-  name: string
-  photoCount: number
-  coverImage: string
-}
+import { useUploadData } from "@/hooks/use-api";
+import { useState } from "react";
 
 interface CreateAlbumDialogProps {
-  isOpen: boolean
-  onOpenChange: (open: boolean) => void
-  newAlbumName: string
-  onAlbumNameChange: (name: string) => void
-  onCreateAlbum: () => void
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  newAlbumName: string;
+  onAlbumNameChange: (name: string) => void;
+  onCreateAlbum: () => void;
 }
 
 export function CreateAlbumDialog({
@@ -27,13 +22,41 @@ export function CreateAlbumDialog({
   onOpenChange,
   newAlbumName,
   onAlbumNameChange,
-  onCreateAlbum,
+  onCreateAlbum, // will be unused
 }: CreateAlbumDialogProps) {
+  const [description, setDescription] = useState("");
+  const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
+  const { mutate, status } = useUploadData("/albums/album");
+
+  const handleCreateAlbum = () => {
+    if (!newAlbumName) {
+      toast.error("Album name is required");
+      return;
+    }
+    const formData = new FormData();
+    formData.append("title", newAlbumName);
+    if (description) formData.append("description", description);
+    if (coverImageFile) formData.append("coverImage", coverImageFile);
+
+    mutate(formData, {
+      onSuccess: () => {
+        toast.success("Album created successfully!");
+        onOpenChange(false);
+        onAlbumNameChange("");
+        setDescription("");
+        setCoverImageFile(null);
+      },
+      onError: (error: any) => {
+        toast.error(error?.message || "Failed to create album");
+      },
+    });
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
-      onCreateAlbum()
+      handleCreateAlbum();
     }
-  }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -56,13 +79,38 @@ export function CreateAlbumDialog({
               value={newAlbumName}
               onChange={(e) => onAlbumNameChange(e.target.value)}
               onKeyPress={handleKeyPress}
+              disabled={status === "pending"}
             />
           </div>
-          <Button onClick={onCreateAlbum} className="w-full">
-            Create Album
+          <div className="space-y-2">
+            <Label htmlFor="albumDescription">Description</Label>
+            <Input
+              id="albumDescription"
+              placeholder="Enter description (optional)"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              disabled={status === "pending"}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="coverImage">Cover Image</Label>
+            <Input
+              id="coverImage"
+              type="file"
+              accept="image/*"
+              onChange={(e) => setCoverImageFile(e.target.files?.[0] || null)}
+              disabled={status === "pending"}
+            />
+          </div>
+          <Button
+            onClick={handleCreateAlbum}
+            className="w-full"
+            disabled={status === "pending"}
+          >
+            {status === "pending" ? "Creating..." : "Create Album"}
           </Button>
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 } 

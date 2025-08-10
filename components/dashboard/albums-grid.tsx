@@ -1,36 +1,53 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
 import { Camera, Plus } from "lucide-react";
 import { AlbumCard } from "./album-card";
+import { useFetchData } from "@/hooks/use-api";
+import toast from "react-hot-toast";
 
 interface Album {
-  id: number;
-  name: string;
-  photoCount: number;
+  id: string;
+  title: string;
+  description: string;
   coverImage: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface AlbumsGridProps {
-  albums: Album[];
+  albums: Album[]; // This prop is now unused; remove if not passed
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
   searchTerm: string;
-  onDeleteAlbum: (albumId: number) => void;
+  onDeleteAlbum: (albumId: string) => void;
   onCreateAlbum: () => void;
-  currentPage?: number;
-  totalPages?: number;
-  onPageChange?: (page: number) => void;
 }
 
 export function AlbumsGrid({
-  albums,
   searchTerm,
   onDeleteAlbum,
   onCreateAlbum,
-  currentPage,
-  totalPages,
-  onPageChange,
 }: AlbumsGridProps) {
+  const { data, isLoading, error } = useFetchData("/albums/album");
+
+  const albums: Album[] = data?.data || []; // assuming data comes from { data: [...] }
+
+  if (isLoading) {
+    return (
+      <div className="text-center py-12 text-gray-500">Loading albums...</div>
+    );
+  }
+
+  if (error) {
+    toast.error("Failed to load albums");
+    return (
+      <div className="text-center py-12 text-red-500">Error loading albums</div>
+    );
+  }
+
   if (albums.length === 0) {
     return (
       <div className="text-center py-12">
@@ -63,15 +80,6 @@ export function AlbumsGrid({
           <AlbumCard key={album.id} album={album} onDelete={onDeleteAlbum} />
         ))}
       </div>
-
-      {totalPages && totalPages > 1 && onPageChange && currentPage && (
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={onPageChange}
-          className="mt-8"
-        />
-      )}
     </div>
   );
-} 
+}

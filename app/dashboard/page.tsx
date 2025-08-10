@@ -52,7 +52,7 @@ export default function DashboardPage() {
 
           {/* Albums Grid */}
           <AlbumsGrid
-            albums={albums}
+            albums={albums as any}
             searchTerm={searchTerm}
             onDeleteAlbum={handleDeleteAlbum}
             onCreateAlbum={() => handleDialogOpenChange(true)}

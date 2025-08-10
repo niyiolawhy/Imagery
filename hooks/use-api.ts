@@ -1,6 +1,6 @@
 import { axiosInstance } from "@/services/axios-instance";
 import { useQuery, useMutation } from "@tanstack/react-query";
-
+const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
 // Post Data
 export const usePostData = (url: string) => {
@@ -38,17 +38,20 @@ export const useGetExportData = (url: string) => {
 // Upload Data
 export const useUploadData = (url: string) => {
     return useMutation({
-        mutationFn: async (arg: any) => {
-            const response = await axiosInstance.post(url, arg, {
+        mutationFn: async (formData: FormData) => {
+            const token = localStorage.getItem("token");
+
+            const response = await axiosInstance.post(url, formData, {
                 headers: {
                     "Content-Type": "multipart/form-data",
+                    Authorization: `Bearer ${token}`,
                 },
             });
+
             return response.data;
         },
     });
 };
-
 export const useUploadPatchData = (url: string) => {
     return useMutation({
         mutationFn: async (arg: any) => {
@@ -129,6 +132,7 @@ export const useFetchData = (url: string, options?: any) => {
             });
             return response.data;
         },
+        enabled: !!token,
     });
 
     return { ...query, isLoading: query.isFetching || query.isLoading };

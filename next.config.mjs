@@ -7,6 +7,7 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
+    domains: ["storage.googleapis.com"],
     unoptimized: true,
   },
 }

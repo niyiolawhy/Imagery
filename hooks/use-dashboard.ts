@@ -2,29 +2,18 @@
 
 import { useState } from "react"
 import toast from "react-hot-toast"
+import { useFetchData } from "./use-api"
 
 interface Album {
-  id: number
+  id: string
   name: string
   photoCount: number
   coverImage: string
 }
 
 export function useDashboard() {
-  const [albums, setAlbums] = useState<Album[]>([
-    { id: 1, name: "Summer Vacation 2024", photoCount: 24, coverImage: "/placeholder.svg?height=200&width=300" },
-    { id: 2, name: "Family Portraits", photoCount: 12, coverImage: "/placeholder.svg?height=200&width=300" },
-    { id: 3, name: "Nature Photography", photoCount: 36, coverImage: "/placeholder.svg?height=200&width=300" },
-    { id: 4, name: "City Adventures", photoCount: 18, coverImage: "/placeholder.svg?height=200&width=300" },
-    { id: 5, name: "Wedding Memories", photoCount: 45, coverImage: "/placeholder.svg?height=200&width=300" },
-    { id: 6, name: "Pet Photos", photoCount: 8, coverImage: "/placeholder.svg?height=200&width=300" },
-    { id: 7, name: "Food Photography", photoCount: 15, coverImage: "/placeholder.svg?height=200&width=300" },
-    { id: 8, name: "Travel Diary", photoCount: 32, coverImage: "/placeholder.svg?height=200&width=300" },
-    { id: 9, name: "Street Art", photoCount: 20, coverImage: "/placeholder.svg?height=200&width=300" },
-    { id: 10, name: "Wildlife Safari", photoCount: 28, coverImage: "/placeholder.svg?height=200&width=300" },
-    { id: 11, name: "Architecture Tour", photoCount: 16, coverImage: "/placeholder.svg?height=200&width=300" },
-    { id: 12, name: "Beach Memories", photoCount: 22, coverImage: "/placeholder.svg?height=200&width=300" },
-  ])
+  const { data, isLoading, error } = useFetchData("/albums/album");
+  const albums: Album[] = data?.data || [];
 
   const [searchTerm, setSearchTerm] = useState("")
   const [newAlbumName, setNewAlbumName] = useState("")
@@ -63,7 +52,7 @@ export function useDashboard() {
     }
   }
 
-  const handleDeleteAlbum = (albumId: number) => {
+  const handleDeleteAlbum = (albumId: string) => {
     try {
       const albumName = albums.find((album) => album.id === albumId)?.name
       setAlbums(albums.filter((album) => album.id !== albumId))

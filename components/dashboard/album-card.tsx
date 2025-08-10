@@ -10,17 +10,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { MoreVertical, Trash2 } from "lucide-react"
+import Image from "next/image";
 
-interface Album {
-  id: number
-  name: string
-  photoCount: number
-  coverImage: string
+export interface Album {
+  id: string;
+  title: string;
+  description: string;
+  coverImage: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface AlbumCardProps {
-  album: Album
-  onDelete: (albumId: number) => void
+  album: Album;
+  onDelete: (albumId: string) => void;
 }
 
 export function AlbumCard({ album, onDelete }: AlbumCardProps) {
@@ -29,10 +32,12 @@ export function AlbumCard({ album, onDelete }: AlbumCardProps) {
       <CardContent className="p-0">
         <div className="relative">
           <Link href={`/album/${album.id}`}>
-            <img
+            <Image
               src={album.coverImage || "/placeholder.svg"}
-              alt={album.name}
+              alt={album.title}
               className="w-full h-48 object-cover rounded-t-lg"
+              width={100}
+              height={100}
             />
           </Link>
           <DropdownMenu>
@@ -46,7 +51,10 @@ export function AlbumCard({ album, onDelete }: AlbumCardProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onDelete(album.id)} className="text-red-600">
+              <DropdownMenuItem
+                onClick={() => onDelete(album.id)}
+                className="text-red-600"
+              >
                 <Trash2 className="w-4 h-4 mr-2" />
                 Delete Album
               </DropdownMenuItem>
@@ -56,14 +64,12 @@ export function AlbumCard({ album, onDelete }: AlbumCardProps) {
         <div className="p-4">
           <Link href={`/album/${album.id}`}>
             <h3 className="font-semibold text-lg mb-1 hover:text-purple-600 transition-colors">
-              {album.name}
+              {album.title}
             </h3>
           </Link>
-          <p className="text-gray-600 text-sm">
-            {album.photoCount} {album.photoCount === 1 ? "photo" : "photos"}
-          </p>
+          <p className="text-gray-600 text-sm">{album.description}</p>
         </div>
       </CardContent>
     </Card>
-  )
+  );
 } 

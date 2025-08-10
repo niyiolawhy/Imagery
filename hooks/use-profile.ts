@@ -1,23 +1,26 @@
 "use client"
-
-import { useState } from "react"
-import toast from "react-hot-toast"
+import { Profile } from "@/components/profile/profile-info";
 import { useFetchData } from "@/hooks/use-api"
-import React from "react"
-
-interface Profile {
-  name: string
-  email: string
-  phone: string
-  location: string
-  joinDate: string
-  bio: string
+function formatDate(dateString?: string) {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
 export function useProfile() {
-  const { data, isLoading, error } = useFetchData("/users/profile");
+  const { data: apiData, isLoading, error } = useFetchData("/users/profile");
 
-  const profile = data ?? null;
+  const profile: Profile | null = apiData?.data
+    ? {
+      name: apiData.data.name || "",
+      email: apiData.data.email || "",
+      username: apiData.data.username || "",
+      avatarUrl: apiData.data.avatarUrl || "",
+      dob: formatDate(apiData.data.dob),
+      joinDate: formatDate(apiData.data.createdAt),
+      bio: apiData.data.bio || "",
+    }
+    : null;
 
   return {
     profile,
