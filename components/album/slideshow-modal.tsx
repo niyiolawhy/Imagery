@@ -16,30 +16,25 @@ import {
   ZoomOut,
 } from "lucide-react"
 
-interface Photo {
-  id: number
-  src: string
-  alt: string
-  name: string
-}
+import { Photo } from "@/types/photo";
 
 interface SlideshowModalProps {
-  isOpen: boolean
-  onClose: () => void
-  currentPhoto: Photo | null
-  currentPhotoIndex: number
-  totalPhotos: number
-  isAutoPlay: boolean
-  zoomLevel: number
-  isFullscreen: boolean
-  onPrevious: () => void
-  onNext: () => void
-  onToggleAutoPlay: () => void
-  onZoomIn: () => void
-  onZoomOut: () => void
-  onResetZoom: () => void
-  onToggleFullscreen: () => void
-  onDownloadPhoto: (photo: Photo) => void
+  isOpen: boolean;
+  onClose: () => void;
+  currentPhoto: Photo | null;
+  currentPhotoIndex: number;
+  totalPhotos: number;
+  isAutoPlay: boolean;
+  zoomLevel: number;
+  isFullscreen: boolean;
+  onPrevious: () => void;
+  onNext: () => void;
+  onToggleAutoPlay: () => void;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+  onResetZoom: () => void;
+  onToggleFullscreen: () => void;
+  onDownloadPhoto: (photo: Photo) => void;
 }
 
 export function SlideshowModal({
@@ -60,14 +55,14 @@ export function SlideshowModal({
   onToggleFullscreen,
   onDownloadPhoto,
 }: SlideshowModalProps) {
-  if (!currentPhoto) return null
+  if (!currentPhoto) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-5xl max-h-[85vh] p-0 bg-black border-0">
         <DialogHeader className="p-4 pb-0">
           <DialogTitle className="text-white text-center text-lg font-medium">
-            {currentPhoto.alt}
+            {currentPhoto.description || `Photo ${currentPhoto.id}`}
           </DialogTitle>
         </DialogHeader>
 
@@ -174,8 +169,8 @@ export function SlideshowModal({
           {/* Main Image */}
           <div className="flex items-center justify-center w-full h-full p-6">
             <img
-              src={currentPhoto.src || "/placeholder.svg"}
-              alt={currentPhoto.alt}
+              src={currentPhoto?.imageUrl || "/placeholder.svg"}
+              alt={currentPhoto?.imageUrl || "Photo"}
               className="max-w-full max-h-full object-contain transition-transform duration-200 select-none"
               style={{ transform: `scale(${zoomLevel})` }}
               draggable={false}
@@ -184,5 +179,5 @@ export function SlideshowModal({
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 } 

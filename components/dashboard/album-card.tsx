@@ -27,6 +27,8 @@ interface AlbumCardProps {
 }
 
 export function AlbumCard({ album, onDelete }: AlbumCardProps) {
+  console.log("Cover image URL:", album.coverImage);
+
   return (
     <Card className="group hover:shadow-lg transition-shadow">
       <CardContent className="p-0">
@@ -38,6 +40,7 @@ export function AlbumCard({ album, onDelete }: AlbumCardProps) {
               className="w-full h-48 object-cover rounded-t-lg"
               width={100}
               height={100}
+              unoptimized
             />
           </Link>
           <DropdownMenu>

@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { ArrowLeft, LogOut, Search, User } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/auth-context";
+import { useProfile } from "@/hooks/use-profile";
 
 interface AppHeaderProps {
   searchTerm: string;
@@ -21,6 +23,23 @@ interface AppHeaderProps {
 
 export function AppHeader({ searchTerm, onSearchChange }: AppHeaderProps) {
   const router = useRouter();
+  const { logout, user } = useAuth();
+  const { profile } = useProfile();
+
+  const handleLogout = () => {
+    logout();
+    router.push("/auth/login");
+  };
+
+  const getUserInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
   return (
     <header className="bg-white border-b">
       <div className="container mx-auto px-4 py-4">
@@ -53,10 +72,15 @@ export function AppHeader({ searchTerm, onSearchChange }: AppHeaderProps) {
                 >
                   <Avatar className="h-8 w-8">
                     <AvatarImage
-                      src="/placeholder.svg?height=32&width=32"
-                      alt="User"
+                      src={
+                        profile?.avatarUrl ||
+                        "/placeholder.svg?height=32&width=32"
+                      }
+                      alt={profile?.avatarUrl || "User"}
                     />
-                    <AvatarFallback>JD</AvatarFallback>
+                    <AvatarFallback>
+                      {profile ? getUserInitials(profile?.username) : "U"}
+                    </AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
@@ -70,14 +94,7 @@ export function AppHeader({ searchTerm, onSearchChange }: AppHeaderProps) {
                   </DropdownMenuItem>
                 </Link>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => {
-                    localStorage.removeItem("isAuthenticated");
-                    localStorage.removeItem("userEmail");
-                    localStorage.removeItem("userName");
-                    router.push("/auth/login");
-                  }}
-                >
+                <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Log out</span>
                 </DropdownMenuItem>

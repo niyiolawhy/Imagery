@@ -20,23 +20,31 @@ import {
 } from "@/components/ui/card";
 import { Camera, Eye, EyeOff } from "lucide-react";
 import toast from "react-hot-toast";
-import { setToken } from "@/services/axios-instance";
+import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "next/navigation";
 
 const handleSubmit = async (
   values: LoginFormValues,
   { setSubmitting }: any,
   loginMutation: any,
-  router: any
+  router: any,
+  updateTokens: any,
+  login: any
 ) => {
   try {
     const res = await loginMutation?.mutateAsync?.(values);
-    toast.success("Login successful! Redirecting...");
-    setToken(res.data.token, res.data.refreshToken);
-    localStorage.setItem("isAuthenticated", "true");
-    setTimeout(() => {
-      router.push("/dashboard");
-    }, 1000);
+
+    if (res.data?.token && res.data?.refreshToken) {
+      updateTokens(res.data.token, res.data.refreshToken);
+      login(values.username, values.password);
+
+      toast.success("Login successful! Redirecting...");
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 1000);
+    } else {
+      toast.error("Invalid response from server");
+    }
   } catch (error: any) {
     toast.error(error?.response?.data?.message || "Login failed");
   } finally {
@@ -48,6 +56,8 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const loginMutation = usePostData("/auth/login");
   const router = useRouter();
+  const { updateTokens, login } = useAuth();
+
   const initialValues: LoginFormValues = {
     username: "",
     password: "",
@@ -70,7 +80,14 @@ export default function LoginPage() {
             initialValues={initialValues}
             validationSchema={LoginSchema}
             onSubmit={(values, actions) =>
-              handleSubmit(values, actions, loginMutation, router)
+              handleSubmit(
+                values,
+                actions,
+                loginMutation,
+                router,
+                updateTokens,
+                login
+              )
             }
           >
             {({ isSubmitting, values, setFieldValue }) => (

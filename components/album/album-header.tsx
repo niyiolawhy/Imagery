@@ -4,17 +4,19 @@ import { Button } from "@/components/ui/button"
 import { Download, Share2, Upload } from "lucide-react"
 
 interface AlbumHeaderProps {
-  albumName: string
-  photoCount: number
-  onShare: () => void
-  onDownloadAll: () => void
-  onUpload: () => void
-  isUploading: boolean
+  albumName: string;
+  photoCount: number;
+  albumDescription?: string;
+  onShare: () => void;
+  onDownloadAll: () => void;
+  onUpload: () => void;
+  isUploading: boolean;
 }
 
 export function AlbumHeader({
   albumName,
   photoCount,
+  albumDescription,
   onShare,
   onDownloadAll,
   onUpload,
@@ -26,15 +28,14 @@ export function AlbumHeader({
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">{albumName}</h1>
+            {albumDescription && (
+              <p className="text-gray-600 mt-1">{albumDescription}</p>
+            )}
             <p className="text-gray-600 mt-1">{photoCount} photos</p>
           </div>
 
           <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onShare}
-            >
+            <Button variant="outline" size="sm" onClick={onShare}>
               <Share2 className="w-4 h-4 mr-2" />
               Share
             </Button>
@@ -55,5 +56,5 @@ export function AlbumHeader({
         </div>
       </div>
     </div>
-  )
+  );
 } 

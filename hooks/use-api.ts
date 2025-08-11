@@ -1,6 +1,13 @@
 import { axiosInstance } from "@/services/axios-instance";
-import { useQuery, useMutation } from "@tanstack/react-query";
-const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+    GetPhotosQuery,
+    // AddPhotoRequest,
+    DeletePhotoRequest,
+    PhotosResponse,
+    AddPhotoParams
+} from "@/types/photo";
+import { Album } from "@/types/album";
 
 // Post Data
 export const usePostData = (url: string) => {
@@ -65,18 +72,7 @@ export const useUploadPatchData = (url: string) => {
     });
 };
 
-export const useUploadPutData = (url: string) => {
-    return useMutation({
-        mutationFn: async (arg: any) => {
-            const response = await axiosInstance.put(url, arg, {
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                },
-            });
-            return response.data;
-        },
-    });
-};
+
 
 // Update (PUT) Data
 export const usePutData = (url: string) => {
@@ -89,24 +85,27 @@ export const usePutData = (url: string) => {
 };
 
 // Update (PATCH) Data
-export const usePatchData = (url: string) => {
-    return useMutation({
-        mutationFn: async (arg: any) => {
-            const response = await axiosInstance.patch(url, arg);
-            return response.data;
-        },
-    });
-};
-
-// Delete Data
 export const useDeleteData = (url: string) => {
     return useMutation({
-        mutationFn: async () => {
-            const response = await axiosInstance.delete(url);
-            return response.data;
-        },
-    });
-};
+        mutationFn: async (id: string) => {
+            const finalUrl = url.replace(":id", id)
+            const response = await axiosInstance.delete(finalUrl)
+            return response.data
+        }
+    })
+}
+
+export const useUploadPutData = (url: string) => {
+    return useMutation({
+        mutationFn: async (params: { id: string; formData: FormData }) => {
+            const finalUrl = url.replace(":id", params.id)
+            const response = await axiosInstance.put(finalUrl, params.formData, {
+                headers: { "Content-Type": "multipart/form-data" }
+            })
+            return response.data
+        }
+    })
+}
 
 // Get Data (Single Fetch)
 export const useGetData = (url: string) => {
@@ -132,7 +131,7 @@ export const useFetchData = (url: string, options?: any) => {
             });
             return response.data;
         },
-        enabled: !!token,
+        enabled: !!url,
     });
 
     return { ...query, isLoading: query.isFetching || query.isLoading };
@@ -149,4 +148,183 @@ export const useFetchPostData = (url: string, options: any) => {
     });
 
     return { ...query, isLoading: query.isFetching || query.isLoading };
+};
+
+// Photo Management Functions
+export const useGetPhotos = (albumId: string, query: GetPhotosQuery = {}) => {
+    return useQuery({
+        queryKey: ["photos", albumId, query],
+        queryFn: async (): Promise<PhotosResponse> => {
+            const response = await axiosInstance.get(`/photos/${albumId}/photos`, {
+                params: query,
+            });
+            return response.data.data; // Extract the nested data from the API response
+        },
+        enabled: !!albumId,
+    });
+};
+
+export const useAddPhoto = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ albumId, formData }: AddPhotoParams) => {
+            const response = await axiosInstance.post(
+                `/photos/${albumId}/add-photo`,
+                formData,
+                {
+                    headers: {
+                        "Content-Type": "multipart/form-data", // Let axios set this correctly
+                    },
+                }
+            );
+            return response.data;
+        },
+        onSuccess: (data, variables) => {
+            queryClient.invalidateQueries({ queryKey: ["photos", variables.albumId] });
+            queryClient.invalidateQueries({ queryKey: ["albums"] });
+        },
+    });
+};
+
+export const useDeletePhoto = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ albumId, photoId }: DeletePhotoRequest) => {
+            console.log('Attempting to delete photo:', { albumId, photoId });
+            try {
+                const response = await axiosInstance.delete(`/photos/${albumId}/delete-photos/${photoId}`);
+                console.log('Delete photo response:', response);
+                return response.data;
+            } catch (error) {
+                console.error('Delete photo error:', error);
+                throw error;
+            }
+        },
+        onSuccess: (_, variables) => {
+            console.log('Photo deleted successfully, invalidating queries');
+            // Invalidate and refetch photos for the album
+            queryClient.invalidateQueries({ queryKey: ["photos", variables.albumId] });
+            // Also invalidate album data to update photo count
+            queryClient.invalidateQueries({ queryKey: ["albums"] });
+        },
+        onError: (error) => {
+            console.error('Delete photo mutation error:', error);
+        }
+    });
+};
+
+// Album management hooks
+export const useGetAlbum = (albumId: string) => {
+    return useQuery({
+        queryKey: ["album", albumId],
+        queryFn: async (): Promise<Album> => {
+            console.log('Fetching album:', albumId);
+            try {
+                const response = await axiosInstance.get(`/albums/${albumId}`);
+                console.log('Album response:', response);
+                return response.data.data; // Extract the nested data from the API response
+            } catch (error) {
+                console.error('Failed to fetch album:', error);
+                throw error;
+            }
+        },
+        enabled: !!albumId,
+    });
+};
+
+export const useGetAlbums = (query: { search?: string; page?: string; limit?: string } = {}) => {
+    return useQuery({
+        queryKey: ["albums", query],
+        queryFn: async (): Promise<{ albums: Album[]; total: number; page: number; limit: number; totalPages: number }> => {
+            console.log('Fetching albums with query:', query);
+            try {
+                const response = await axiosInstance.get("/albums/album", {
+                    params: query,
+                });
+                console.log('Albums response:', response);
+                return response.data.data; // Extract the nested data from the API response
+            } catch (error) {
+                console.error('Failed to fetch albums:', error);
+                throw error;
+            }
+        },
+    });
+};
+
+export const useDeleteAlbum = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (albumId: string) => {
+            console.log('Attempting to delete album:', albumId);
+            try {
+                const response = await axiosInstance.delete(`/albums/${albumId}`);
+                console.log('Delete album response:', response);
+                return response.data;
+            } catch (error) {
+                console.error('Delete album error:', error);
+                throw error;
+            }
+        },
+
+        onSuccess: (data, albumId) => {
+            console.log('Album deleted successfully, invalidating queries');
+            queryClient.invalidateQueries({ queryKey: ["albums"] });
+        },
+        onError: (error) => {
+            console.error('Delete album mutation error:', error);
+        }
+    });
+};
+
+export const useEditAlbum = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ albumId, data }: { albumId: string; data: { title: string; description: string; file?: File } }) => {
+            const formData = new FormData();
+            formData.append("title", data.title);
+            formData.append("description", data.description);
+
+            if (data.file) {
+                formData.append("file", data.file);
+            }
+
+            const response = await axiosInstance.put(`/albums/${albumId}`, formData, {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+            });
+            return response.data;
+        },
+        onSuccess: (data, variables) => {
+            queryClient.invalidateQueries({ queryKey: ["albums"] });
+            queryClient.invalidateQueries({ queryKey: ["album", variables.albumId] });
+        },
+    });
+};
+
+export const useCreateAlbum = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (data: { title: string; description: string; file?: File }) => {
+            const formData = new FormData();
+            formData.append("title", data.title);
+            formData.append("description", data.description);
+
+            if (data.file) {
+                formData.append("coverImage", data.file);
+            }
+
+            const response = await axiosInstance.post("/albums/album", formData, {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+            });
+            return response.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["albums"] });
+        },
+    });
 };

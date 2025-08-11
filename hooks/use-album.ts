@@ -3,115 +3,54 @@
 import { useState, useRef, useEffect } from "react"
 import { useParams } from "next/navigation"
 import toast from "react-hot-toast"
-
-interface Photo {
-  id: number
-  src: string
-  alt: string
-  name: string
-}
+import { useGetPhotos, useAddPhoto, useDeletePhoto, useGetAlbum } from "./use-api"
+import { Photo as ApiPhoto, Photo } from "@/types/photo"
 
 export function useAlbum() {
   const params = useParams()
   const { id } = params
+  const albumId = id as string
 
-  // Track the next available ID to ensure uniqueness
-  const [nextPhotoId, setNextPhotoId] = useState(16) // Start after the initial 15 photos
-
-  const [photos, setPhotos] = useState<Photo[]>([
-    {
-      id: 1,
-      src: "/placeholder.svg?height=800&width=1200&text=Beach+Sunset",
-      alt: "Beach sunset",
-      name: "beach-sunset.jpg",
-    },
-    {
-      id: 2,
-      src: "/placeholder.svg?height=800&width=1200&text=Mountain+View",
-      alt: "Mountain view",
-      name: "mountain-view.jpg",
-    },
-    {
-      id: 3,
-      src: "/placeholder.svg?height=800&width=1200&text=City+Lights",
-      alt: "City lights",
-      name: "city-lights.jpg",
-    },
-    {
-      id: 4,
-      src: "/placeholder.svg?height=800&width=1200&text=Forest+Path",
-      alt: "Forest path",
-      name: "forest-path.jpg",
-    },
-    {
-      id: 5,
-      src: "/placeholder.svg?height=800&width=1200&text=Ocean+Waves",
-      alt: "Ocean waves",
-      name: "ocean-waves.jpg",
-    },
-    {
-      id: 6,
-      src: "/placeholder.svg?height=800&width=1200&text=Desert+Landscape",
-      alt: "Desert landscape",
-      name: "desert-landscape.jpg",
-    },
-    {
-      id: 7,
-      src: "/placeholder.svg?height=800&width=1200&text=Lake+Reflection",
-      alt: "Lake reflection",
-      name: "lake-reflection.jpg",
-    },
-    {
-      id: 8,
-      src: "/placeholder.svg?height=800&width=1200&text=Snow+Peaks",
-      alt: "Snow-capped peaks",
-      name: "snow-peaks.jpg",
-    },
-    {
-      id: 9,
-      src: "/placeholder.svg?height=800&width=1200&text=Sunset+Over+Mountains",
-      alt: "Sunset over mountains",
-      name: "sunset-mountains.jpg",
-    },
-    {
-      id: 10,
-      src: "/placeholder.svg?height=800&width=1200&text=Golden+Hour+Portrait",
-      alt: "Golden hour portrait",
-      name: "golden-hour-portrait.jpg",
-    },
-    {
-      id: 11,
-      src: "/placeholder.svg?height=800&width=1200&text=Urban+Architecture",
-      alt: "Urban architecture",
-      name: "urban-architecture.jpg",
-    },
-    {
-      id: 12,
-      src: "/placeholder.svg?height=800&width=1200&text=Wildlife+Photography",
-      alt: "Wildlife photography",
-      name: "wildlife-photography.jpg",
-    },
-    {
-      id: 13,
-      src: "/placeholder.svg?height=800&width=1200&text=Abstract+Art",
-      alt: "Abstract art",
-      name: "abstract-art.jpg",
-    },
-    {
-      id: 14,
-      src: "/placeholder.svg?height=800&width=1200&text=Street+Photography",
-      alt: "Street photography",
-      name: "street-photography.jpg",
-    },
-    {
-      id: 15,
-      src: "/placeholder.svg?height=800&width=1200&text=Macro+Nature",
-      alt: "Macro nature",
-      name: "macro-nature.jpg",
-    },
-  ])
-
+  // API state
+  const [currentPage, setCurrentPage] = useState(1)
   const [searchTerm, setSearchTerm] = useState("")
+  const itemsPerPage = 10
+
+  // Fetch album data from API
+  const {
+    data: albumData,
+    isLoading: isLoadingAlbum,
+    error: albumError,
+    refetch: refetchAlbum
+  } = useGetAlbum(albumId)
+
+  // Fetch photos from API
+  const {
+    data: photosData,
+    isLoading: isLoadingPhotos,
+    error: photosError,
+    refetch: refetchPhotos
+  } = useGetPhotos(albumId, {
+    page: currentPage.toString(),
+    limit: itemsPerPage.toString(),
+    search: searchTerm || undefined
+  })
+
+  // Photo mutations
+  const addPhotoMutation = useAddPhoto()
+  const deletePhotoMutation = useDeletePhoto()
+
+  // Convert API photos to local Photo interface
+  const photos: Photo[] = photosData?.photos?.map((apiPhoto: ApiPhoto) => ({
+    id: apiPhoto.id,
+    imageUrl: apiPhoto.imageUrl,
+    description: apiPhoto.description || `Photo ${apiPhoto.id}`,
+    albumId: apiPhoto.albumId,
+    createdAt: apiPhoto.createdAt,
+    updatedAt: apiPhoto.updatedAt,
+  })) || []
+
+  // Local state
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0)
   const [isSlideShowOpen, setIsSlideShowOpen] = useState(false)
   const [isAutoPlay, setIsAutoPlay] = useState(false)
@@ -119,26 +58,44 @@ export function useAlbum() {
   const [isUploading, setIsUploading] = useState(false)
   const [zoomLevel, setZoomLevel] = useState(1)
   const [isFullscreen, setIsFullscreen] = useState(false)
-  const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 10
   
   const fileInputRef = useRef<HTMLInputElement>(null)
   const autoPlayRef = useRef<NodeJS.Timeout | null>(null)
 
-  const albumName = "Summer Vacation 2024"
+  const albumName = albumData?.title || "Loading..." // Get album name from backend
+  const albumDescription = albumData?.description || ""
+  const albumCoverImage = albumData?.coverImage || ""
   const albumUrl = typeof window !== 'undefined' ? `${window.location.origin}/album/${id}` : ""
 
   const filteredPhotos = photos.filter((photo) =>
-    photo.alt.toLowerCase().includes(searchTerm.toLowerCase())
+    (photo.description || '').toLowerCase().includes(searchTerm.toLowerCase())
   )
 
+  // Use album photo count if available, otherwise use filtered photos length
+  const photoCount = albumData?.photoCount || filteredPhotos.length
+
   // Pagination logic
-  const totalPages = Math.ceil(filteredPhotos.length / itemsPerPage)
+  const totalPages = photosData?.totalPages || Math.ceil(filteredPhotos.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
   const paginatedPhotos = filteredPhotos.slice(startIndex, endIndex)
 
   const currentPhoto = filteredPhotos[currentPhotoIndex]
+
+  // Refetch album and photos when albumId changes
+  useEffect(() => {
+    if (albumId) {
+      refetchAlbum()
+      refetchPhotos()
+    }
+  }, [albumId, refetchAlbum, refetchPhotos])
+
+  // Refetch photos when search term or page changes
+  useEffect(() => {
+    if (albumId) {
+      refetchPhotos()
+    }
+  }, [albumId, searchTerm, currentPage, refetchPhotos])
 
   // Auto-play functionality
   useEffect(() => {
@@ -271,11 +228,17 @@ export function useAlbum() {
     }
   }
 
-  const handleDeletePhoto = (photoId: number) => {
+  const handleDeletePhoto = async (photoId: string) => {
     try {
       const photoIndex = photos.findIndex((photo) => photo.id === photoId)
-      setPhotos(photos.filter((photo) => photo.id !== photoId))
 
+      // Call the delete API
+      await deletePhotoMutation.mutateAsync({
+        albumId,
+        photoId: photoId
+      })
+
+      // Update local state for immediate UI feedback
       if (
         isSlideShowOpen &&
         photoIndex <= currentPhotoIndex &&
@@ -286,46 +249,39 @@ export function useAlbum() {
 
       toast.success("Photo deleted successfully!")
     } catch (error) {
+      console.error('Delete photo error in use-album:', error);
       toast.error("Failed to delete photo. Please try again.")
     }
   }
 
-  const handleFileUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const files = event.target.files
-    if (!files || files.length === 0) return
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
 
-    setIsUploading(true)
+    setIsUploading(true);
 
     try {
-      const newPhotos = Array.from(files).map((file, index) => {
-        const url = URL.createObjectURL(file)
-        const newId = nextPhotoId + index
-        return {
-          id: newId,
-          src: url,
-          alt: file.name.split(".")[0].replace(/[-_]/g, " "),
-          name: file.name,
-        }
-      })
+      const uploadPromises = Array.from(files).map((file) => {
+        const formData = new FormData();
+        formData.append("image", file);
+        formData.append("description", file.name.split(".")[0].replace(/[-_]/g, " "));
 
-      setPhotos((prev) => [...prev, ...newPhotos])
-      setNextPhotoId(nextPhotoId + files.length)
-      toast.success(
-        `${files.length} photo${
-          files.length > 1 ? "s" : ""
-        } uploaded successfully!`
-      )
+        return addPhotoMutation.mutateAsync({ albumId, formData });
+      });
+
+      await Promise.all(uploadPromises);
+
+      toast.success(`${files.length} photo${files.length > 1 ? "s" : ""} uploaded successfully!`);
     } catch (error) {
-      toast.error("Failed to upload photos. Please try again.")
+      toast.error("Failed to upload photos. Please try again.");
     } finally {
-      setIsUploading(false)
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ""
-      }
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
-  }
+  };
+
+
+
 
   const handleUploadClick = () => {
     fileInputRef.current?.click()
@@ -333,12 +289,12 @@ export function useAlbum() {
 
   const handleDownloadPhoto = async (photo: Photo) => {
     try {
-      const response = await fetch(photo.src)
+      const response = await fetch(photo.imageUrl)
       const blob = await response.blob()
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement("a")
       link.href = url
-      link.download = photo.name || "photo.jpg"
+      link.download = photo.description || "photo.jpg"
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -355,12 +311,12 @@ export function useAlbum() {
 
       for (let i = 0; i < Math.min(photos.length, 5); i++) {
         const photo = photos[i]
-        const response = await fetch(photo.src)
+        const response = await fetch(photo.imageUrl)
         const blob = await response.blob()
         const url = window.URL.createObjectURL(blob)
         const link = document.createElement("a")
         link.href = url
-        link.download = `${albumName}-${photo.name}` || `photo-${i + 1}.jpg`
+        link.download = `${albumName}-${photo.description || `photo-${i + 1}`}.jpg`
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)
@@ -389,7 +345,7 @@ export function useAlbum() {
   }
 
   const handleSocialShare = (platform: string) => {
-    const text = `Check out my ${albumName} album on Imagery!`
+    const text = `Check out my ${albumName} album${albumDescription ? `: ${albumDescription}` : ''} on Imagery!`
     const url = albumUrl
 
     let shareUrl = ""
@@ -436,11 +392,19 @@ export function useAlbum() {
     fileInputRef,
     albumName,
     albumUrl,
+    albumDescription,
+    albumCoverImage,
+    photoCount,
+    albumData,
     filteredPhotos,
     paginatedPhotos,
     currentPhoto,
     currentPage,
     totalPages,
+    isLoadingPhotos,
+    photosError,
+    isLoadingAlbum,
+    albumError,
     
     // Actions
     setSearchTerm,
@@ -462,5 +426,7 @@ export function useAlbum() {
     handleCopyLink,
     handleSocialShare,
     handlePageChange,
+    refetchPhotos,
+    refetchAlbum,
   }
 } 

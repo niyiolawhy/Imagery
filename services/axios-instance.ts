@@ -1,7 +1,6 @@
 import axios from "axios";
 import { toast } from "sonner";
 
-
 export const baseUrl = "http://localhost:4000/";
 
 const axiosInstance = axios.create({
@@ -16,17 +15,65 @@ export const setToken = (token: string, refreshToken: string) => {
     localStorage.setItem("Refresh-token", refreshToken);
 };
 
+export const clearTokens = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("Refresh-token");
+    localStorage.removeItem("isAuthenticated");
+    localStorage.removeItem("userEmail");
+    localStorage.removeItem("userName");
+};
+
 const attachToken = (config: any) => {
     const token = localStorage.getItem("token")?.trim();
-    const refreshToken = localStorage.getItem("Refresh-token")?.trim();
 
     if (token) {
         config.headers["Authorization"] = `Bearer ${token}`;
-    }
-    if (refreshToken) {
-        config.headers["x-Refresh-Token"] = `Bearer ${refreshToken}`;
+        console.log('Attaching token to request:', config.url);
+    } else {
+        console.log('No token found for request:', config.url);
     }
     return config;
+};
+
+let isRefreshing = false;
+let failedQueue: Array<{
+    resolve: (value?: any) => void;
+    reject: (error?: any) => void;
+}> = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+    failedQueue.forEach(({ resolve, reject }) => {
+        if (error) {
+            reject(error);
+        } else {
+            resolve(token);
+        }
+    });
+    failedQueue = [];
+};
+
+const refreshToken = async (): Promise<string | null> => {
+    try {
+        const refreshTokenValue = localStorage.getItem("Refresh-token")?.trim();
+        if (!refreshTokenValue) {
+            return null;
+        }
+
+        const response = await axios.post(`${baseUrl}auth/refresh-token`, {
+            refreshToken: refreshTokenValue,
+        });
+
+        const { token: newToken, refreshToken: newRefreshToken } = response.data;
+
+        if (newToken) {
+            setToken(newToken, newRefreshToken);
+            return newToken;
+        }
+        return null;
+    } catch (error) {
+        console.error("Token refresh failed:", error);
+        return null;
+    }
 };
 
 let isShowingError = false;
@@ -46,28 +93,53 @@ const handleError = async (error: any) => {
     const originalRequest = error.config;
 
     // Handle 401 errors with token refresh
-    if ((status === 401 || status === 502) && !originalRequest._retry) {
-        // clear all toasts
-        toast.dismiss();
+    if (status === 401 && !originalRequest._retry) {
+        if (isRefreshing) {
+            // If already refreshing, add to queue
+            return new Promise((resolve, reject) => {
+                failedQueue.push({ resolve, reject });
+            }).then((token) => {
+                originalRequest.headers["Authorization"] = `Bearer ${token}`;
+                return axiosInstance(originalRequest);
+            }).catch((err) => {
+                return Promise.reject(err);
+            });
+        }
 
-        // Check if we're already on the login page
-        const isOnLoginPage = window.location.pathname === "/auth/login";
+        originalRequest._retry = true;
+        isRefreshing = true;
 
-        if (isOnLoginPage) {
-            // Already on login page, just show toast
-            console.log("on login page");
-            toast.error(
-                data?.message || "Login failed. Please check your credentials."
-            );
-        } else {
-            // Not on login page, redirect to login
-            localStorage.clear();
-            window.location.href = "/auth/login";
+        try {
+            const newToken = await refreshToken();
+            if (newToken) {
+                processQueue(null, newToken);
+                originalRequest.headers["Authorization"] = `Bearer ${newToken}`;
+                return axiosInstance(originalRequest);
+            } else {
+                // Refresh failed, redirect to login
+                processQueue(new Error("Token refresh failed"), null);
+                clearTokens();
+                if (window.location.pathname !== "/auth/login") {
+                    window.location.href = "/auth/login";
+                }
+                return Promise.reject(new Error("Authentication failed"));
+            }
+        } catch (refreshError) {
+            processQueue(refreshError, null);
+            clearTokens();
+            if (window.location.pathname !== "/auth/login") {
+                window.location.href = "/auth/login";
+            }
+            return Promise.reject(refreshError);
+        } finally {
+            isRefreshing = false;
         }
     }
 
+    // Handle other errors
     const messages: Record<number, string> = {
         500: "Internal Server Error: Please try again later.",
+        502: "Bad Gateway: Please try again later.",
     };
 
     const errorMessage =

@@ -2,65 +2,82 @@
 
 import { AuthGuard } from "@/components/auth-guard"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
-import { CreateAlbumDialog } from "@/components/dashboard/create-album-dialog";
 import { AlbumsGrid } from "@/components/dashboard/albums-grid";
+import { CreateAlbumDialog } from "@/components/dashboard/create-album-dialog";
 import { useDashboard } from "@/hooks/use-dashboard";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle, Loader2 } from "lucide-react";
 
 export default function DashboardPage() {
   const {
     albums,
     searchTerm,
-    newAlbumName,
-    isDialogOpen,
     currentPage,
     totalPages,
-    handleCreateAlbum,
-    handleDeleteAlbum,
-    handleSearchChange,
-    handleAlbumNameChange,
-    handleDialogOpenChange,
-    handlePageChange,
+    totalAlbums,
+    isLoadingAlbums,
+    albumsError,
+    setSearchTerm,
+    setCurrentPage,
   } = useDashboard();
+
+  // Show loading state
+  if (isLoadingAlbums) {
+    return (
+      <AuthGuard>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4 text-purple-600" />
+            <h2 className="text-xl font-semibold text-gray-700">
+              Loading albums...
+            </h2>
+            <p className="text-gray-500">
+              Please wait while we fetch your albums
+            </p>
+          </div>
+        </div>
+      </AuthGuard>
+    );
+  }
+
+  // Show error state
+  if (albumsError) {
+    return (
+      <AuthGuard>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="max-w-md mx-auto">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Failed to load albums. Please try refreshing the page or contact
+                support if the problem persists.
+              </AlertDescription>
+            </Alert>
+          </div>
+        </div>
+      </AuthGuard>
+    );
+  }
 
   return (
     <AuthGuard>
       <div className="min-h-screen bg-gray-50">
-        {/* Header */}
         <DashboardHeader
           searchTerm={searchTerm}
-          onSearchChange={handleSearchChange}
+          onSearchChange={setSearchTerm}
+          totalAlbums={totalAlbums}
         />
-
-        {/* Main Content */}
         <main className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">My Albums</h1>
-              <p className="text-gray-600 mt-1">
-                Organize and manage your photo collections
-              </p>
-            </div>
-
-            <CreateAlbumDialog
-              isOpen={isDialogOpen}
-              onOpenChange={handleDialogOpenChange}
-              newAlbumName={newAlbumName}
-              onAlbumNameChange={handleAlbumNameChange}
-              onCreateAlbum={handleCreateAlbum}
-            />
-          </div>
-
-          {/* Albums Grid */}
           <AlbumsGrid
-            albums={albums as any}
-            searchTerm={searchTerm}
-            onDeleteAlbum={handleDeleteAlbum}
-            onCreateAlbum={() => handleDialogOpenChange(true)}
+            albums={albums}
             currentPage={currentPage}
             totalPages={totalPages}
-            onPageChange={handlePageChange}
+            onPageChange={setCurrentPage}
           />
         </main>
+        <div className="!flex !justify-end !container !mx-auto !px-4  !py-10">
+          <CreateAlbumDialog />
+        </div>
       </div>
     </AuthGuard>
   );

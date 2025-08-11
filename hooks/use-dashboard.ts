@@ -1,98 +1,60 @@
 "use client"
 
-import { useState } from "react"
-import toast from "react-hot-toast"
-import { useFetchData } from "./use-api"
-
-interface Album {
-  id: string
-  name: string
-  photoCount: number
-  coverImage: string
-}
+import { useState, useEffect } from "react"
+import { useGetAlbums } from "./use-api"
+import { Album } from "@/types/album"
 
 export function useDashboard() {
-  const { data, isLoading, error } = useFetchData("/albums/album");
-  const albums: Album[] = data?.data || [];
-
   const [searchTerm, setSearchTerm] = useState("")
-  const [newAlbumName, setNewAlbumName] = useState("")
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 10
+  const [itemsPerPage] = useState(12)
 
-  const filteredAlbums = albums.filter((album) =>
-    album.name.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  // Fetch albums from API
+  const {
+    data: albumsData,
+    isLoading: isLoadingAlbums,
+    error: albumsError,
+    refetch: refetchAlbums
+  } = useGetAlbums({
+    search: searchTerm || undefined,
+    page: currentPage.toString(),
+    limit: itemsPerPage.toString()
+  })
 
-  // Pagination logic
-  const totalPages = Math.ceil(filteredAlbums.length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
-  const endIndex = startIndex + itemsPerPage
-  const paginatedAlbums = filteredAlbums.slice(startIndex, endIndex)
+  // Filter albums based on search term
+  const filteredAlbums = albumsData?.albums || []
 
-  const handleCreateAlbum = () => {
-    if (newAlbumName.trim()) {
-      try {
-        const newAlbum = {
-          id: albums.length + 1,
-          name: newAlbumName,
-          photoCount: 0,
-          coverImage: "/placeholder.svg?height=200&width=300",
-        }
-        setAlbums([...albums, newAlbum])
-        setNewAlbumName("")
-        setIsDialogOpen(false)
-        toast.success("Album created successfully!")
-      } catch (error) {
-        toast.error("Failed to create album. Please try again.")
-      }
-    } else {
-      toast.error("Please enter an album name.")
-    }
-  }
+  // Pagination
+  const totalPages = albumsData?.totalPages || 1
+  const totalAlbums = albumsData?.total || 0
 
-  const handleDeleteAlbum = (albumId: string) => {
-    try {
-      const albumName = albums.find((album) => album.id === albumId)?.name
-      setAlbums(albums.filter((album) => album.id !== albumId))
-      toast.success(`"${albumName}" album deleted successfully!`)
-    } catch (error) {
-      toast.error("Failed to delete album. Please try again.")
-    }
-  }
-
-  const handleSearchChange = (value: string) => {
-    setSearchTerm(value)
-  }
-
-  const handleAlbumNameChange = (name: string) => {
-    setNewAlbumName(name)
-  }
-
-  const handleDialogOpenChange = (open: boolean) => {
-    setIsDialogOpen(open)
-  }
+  // Refetch albums when search term or page changes
+  useEffect(() => {
+    refetchAlbums()
+  }, [searchTerm, currentPage, refetchAlbums])
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
   }
 
+  const handleSearchChange = (term: string) => {
+    setSearchTerm(term)
+    setCurrentPage(1) // Reset to first page when searching
+  }
+
   return {
     // State
-    albums: paginatedAlbums,
+    albums: filteredAlbums,
     searchTerm,
-    newAlbumName,
-    isDialogOpen,
     currentPage,
     totalPages,
+    totalAlbums,
+    isLoadingAlbums,
+    albumsError,
     
     // Actions
-    handleCreateAlbum,
-    handleDeleteAlbum,
-    handleSearchChange,
-    handleAlbumNameChange,
-    handleDialogOpenChange,
-    handlePageChange,
+    setSearchTerm: handleSearchChange,
+    setCurrentPage: handlePageChange,
+    refetchAlbums,
   }
-} 
+}

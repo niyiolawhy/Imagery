@@ -1,115 +1,146 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Plus } from "lucide-react"
-import toast from "react-hot-toast"
-import { useUploadData } from "@/hooks/use-api";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Plus, Loader2 } from "lucide-react";
+import { useCreateAlbum } from "@/hooks/use-api";
+import toast from "react-hot-toast";
 
-interface CreateAlbumDialogProps {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  newAlbumName: string;
-  onAlbumNameChange: (name: string) => void;
-  onCreateAlbum: () => void;
-}
+export function CreateAlbumDialog() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+  });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-export function CreateAlbumDialog({
-  isOpen,
-  onOpenChange,
-  newAlbumName,
-  onAlbumNameChange,
-  onCreateAlbum, // will be unused
-}: CreateAlbumDialogProps) {
-  const [description, setDescription] = useState("");
-  const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
-  const { mutate, status } = useUploadData("/albums/album");
+  const createAlbumMutation = useCreateAlbum();
 
-  const handleCreateAlbum = () => {
-    if (!newAlbumName) {
-      toast.error("Album name is required");
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formData.title.trim()) {
+      toast.error("Please enter an album title");
       return;
     }
-    const formData = new FormData();
-    formData.append("title", newAlbumName);
-    if (description) formData.append("description", description);
-    if (coverImageFile) formData.append("coverImage", coverImageFile);
 
-    mutate(formData, {
-      onSuccess: () => {
-        toast.success("Album created successfully!");
-        onOpenChange(false);
-        onAlbumNameChange("");
-        setDescription("");
-        setCoverImageFile(null);
-      },
-      onError: (error: any) => {
-        toast.error(error?.message || "Failed to create album");
-      },
-    });
+    try {
+      await createAlbumMutation.mutateAsync({
+        title: formData.title,
+        description: formData.description,
+        file: selectedFile || undefined,
+      });
+
+      toast.success("Album created successfully!");
+      setIsOpen(false);
+      setFormData({ title: "", description: "" });
+      setSelectedFile(null);
+    } catch (error) {
+      toast.error("Failed to create album. Please try again.");
+    }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleCreateAlbum();
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
     }
+  };
+
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      setFormData({ title: "", description: "" });
+      setSelectedFile(null);
+    }
+    setIsOpen(open);
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
           <Plus className="w-4 h-4 mr-2" />
-          Create Album
+          New Album
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Create New Album</DialogTitle>
+          <DialogDescription>
+            Create a new album to organize your photos.
+          </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="albumName">Album Name</Label>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="title">Title *</Label>
             <Input
-              id="albumName"
-              placeholder="Enter album name"
-              value={newAlbumName}
-              onChange={(e) => onAlbumNameChange(e.target.value)}
-              onKeyPress={handleKeyPress}
-              disabled={status === "pending"}
+              id="title"
+              value={formData.title}
+              onChange={(e) =>
+                setFormData({ ...formData, title: e.target.value })
+              }
+              placeholder="Enter album title"
+              required
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="albumDescription">Description</Label>
-            <Input
-              id="albumDescription"
-              placeholder="Enter description (optional)"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              disabled={status === "pending"}
+          <div>
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              value={formData.description}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
+              placeholder="Enter album description (optional)"
+              rows={3}
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="coverImage">Cover Image</Label>
+          <div>
+            <Label htmlFor="coverImage">Cover Image (Optional)</Label>
             <Input
               id="coverImage"
               type="file"
               accept="image/*"
-              onChange={(e) => setCoverImageFile(e.target.files?.[0] || null)}
-              disabled={status === "pending"}
+              onChange={handleFileChange}
+              className="mt-1"
             />
           </div>
-          <Button
-            onClick={handleCreateAlbum}
-            className="w-full"
-            disabled={status === "pending"}
-          >
-            {status === "pending" ? "Creating..." : "Create Album"}
-          </Button>
-        </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsOpen(false)}
+              disabled={createAlbumMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={createAlbumMutation.isPending || !formData.title.trim()}
+            >
+              {createAlbumMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                "Create Album"
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
