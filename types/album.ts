@@ -7,3 +7,17 @@ export interface Album {
   updatedAt: string;
   photoCount?: number;
 }
+
+export interface SharedUser {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl?: string;
+  sharedAt?: string;
+}
+
+export interface GetSharedUsersResponse {
+  message: string;
+  data: SharedUser[];
+}
+

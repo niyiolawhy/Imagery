@@ -75,9 +75,9 @@ export default function DashboardPage() {
             onPageChange={setCurrentPage}
           />
         </main>
-        <div className="!flex !justify-end !container !mx-auto !px-4  !py-10">
+        {/* <div className="!flex !justify-end !container !mx-auto !px-4  !py-10">
           <CreateAlbumDialog />
-        </div>
+        </div> */}
       </div>
     </AuthGuard>
   );

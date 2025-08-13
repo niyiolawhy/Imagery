@@ -1,5 +1,87 @@
 import { axiosInstance } from "@/services/axios-instance";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { GetSharedUsersResponse } from "@/types/album";
+import { UnshareAlbumRequest } from "@/types/user";
+
+// Base API hook for making HTTP requests
+export const useApi = () => {
+    return {
+        get: async (url: string, params?: any) => {
+            const response = await axiosInstance.get(url, { params });
+            return response.data;
+        },
+        post: async (url: string, data?: any) => {
+            const response = await axiosInstance.post(url, data);
+            return response.data;
+        },
+        put: async (url: string, data?: any) => {
+            const response = await axiosInstance.put(url, data);
+            return response.data;
+        },
+        delete: async (url: string) => {
+            const response = await axiosInstance.delete(url);
+            return response.data;
+        }
+    };
+};
+
+// Album sharing hook
+export const useAlbumShare = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ albumId, userIds }: { albumId: string; userIds: string[] }) => {
+            const response = await axiosInstance.post(`/albums/${albumId}/share`, {
+                albumId,
+                userIdsToShareWith: userIds
+            });
+            return response.data;
+        },
+        onSuccess: (_, variables) => {
+            // Invalidate album queries to reflect new sharing status
+            queryClient.invalidateQueries({ queryKey: ["album", variables.albumId] });
+            queryClient.invalidateQueries({ queryKey: ["albums"] });
+        }
+    });
+};
+
+// Album unsharing hook
+export const useAlbumUnshare = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ albumId, userIds }: { albumId: string; userIds: string[] }) => {
+            const response = await axiosInstance.post(`/albums/${albumId}/unshare`, {
+                albumId,
+                userIdsToRemove: userIds
+            });
+            return response.data;
+        },
+        onSuccess: (_, variables) => {
+            // Invalidate album queries to reflect new sharing status
+            queryClient.invalidateQueries({ queryKey: ["album", variables.albumId] });
+            queryClient.invalidateQueries({ queryKey: ["albums"] });
+        }
+    });
+};
+
+// User search hook
+export const useSearchUsers = (searchTerm: string) => {
+    return useQuery({
+        queryKey: ["users", "search", searchTerm],
+        queryFn: async () => {
+            if (!searchTerm || searchTerm.trim().length < 2) return { users: [] };
+
+            const response = await axiosInstance.get("/users", {
+                params: { search: searchTerm, limit: "10", offset: "0" }
+            });
+            return response.data;
+        },
+        enabled: !!searchTerm && searchTerm.trim().length >= 2,
+        staleTime: 5 * 60 * 1000, // 5 minutes
+    });
+};
+
 import {
     GetPhotosQuery,
     // AddPhotoRequest,
@@ -324,6 +406,36 @@ export const useCreateAlbum = () => {
             return response.data;
         },
         onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["albums"] });
+        },
+    });
+};
+
+// Get shared users hook
+export const useGetSharedUsers = (albumId: string) => {
+    return useQuery({
+        queryKey: ["shared-users", albumId],
+        queryFn: async (): Promise<GetSharedUsersResponse> => {
+            const response = await axiosInstance.get(`/albums/${albumId}/shared`);
+            return response.data;
+        },
+        enabled: !!albumId,
+    });
+};
+
+// Remove shared user hook
+export const useRemoveSharedUser = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (data: UnshareAlbumRequest) => {
+            const response = await axiosInstance.post(`/albums/${data.albumId}/unshare`, data);
+            return response.data;
+        },
+        onSuccess: (_, variables) => {
+            // Invalidate shared users query to reflect changes
+            queryClient.invalidateQueries({ queryKey: ["shared-users", variables.albumId] });
+            queryClient.invalidateQueries({ queryKey: ["album", variables.albumId] });
             queryClient.invalidateQueries({ queryKey: ["albums"] });
         },
     });

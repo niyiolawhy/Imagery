@@ -3,14 +3,10 @@
 import type React from "react"
 import { createContext, useContext, useEffect, useState, useRef } from "react";
 import { clearTokens, setToken } from "@/services/axios-instance";
-
-interface User {
-  email: string
-  name: string
-}
+import { AuthUser } from "@/types/user";
 
 interface AuthContextType {
-  user: User | null;
+  user: AuthUser | null;
   isAuthenticated: boolean;
   login: (email: string, password: string, name?: string) => boolean;
   logout: () => void;
@@ -21,7 +17,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 

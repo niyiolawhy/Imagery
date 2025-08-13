@@ -1,13 +1,20 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Download, Share2, Upload } from "lucide-react"
+import { Download, Upload, MoreVertical } from "lucide-react"
+import { ShareDialog } from "./share-dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 interface AlbumHeaderProps {
   albumName: string;
   photoCount: number;
   albumDescription?: string;
-  onShare: () => void;
+  albumId: string;
   onDownloadAll: () => void;
   onUpload: () => void;
   isUploading: boolean;
@@ -17,7 +24,7 @@ export function AlbumHeader({
   albumName,
   photoCount,
   albumDescription,
-  onShare,
+  albumId,
   onDownloadAll,
   onUpload,
   isUploading,
@@ -35,14 +42,6 @@ export function AlbumHeader({
           </div>
 
           <div className="flex items-center space-x-2">
-            <Button variant="outline" size="sm" onClick={onShare}>
-              <Share2 className="w-4 h-4 mr-2" />
-              Share
-            </Button>
-            <Button variant="outline" size="sm" onClick={onDownloadAll}>
-              <Download className="w-4 h-4 mr-2" />
-              Download All
-            </Button>
             <Button
               onClick={onUpload}
               disabled={isUploading}
@@ -52,9 +51,23 @@ export function AlbumHeader({
               <Upload className="w-4 h-4 mr-2" />
               {isUploading ? "Uploading..." : "Add Photos"}
             </Button>
+            <Button variant="outline" size="sm" onClick={onDownloadAll}>
+              <Download className="w-4 h-4 mr-2" />
+              Download All
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <MoreVertical className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <ShareDialog albumId={albumId} albumName={albumName} />
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
     </div>
   );
-} 
+}
