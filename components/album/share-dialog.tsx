@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -110,9 +110,19 @@ const SelectedUsers = ({
   </div>
 );
 
-// Custom hook for search logic
 const useUserSearch = (searchQuery: string) => {
-  const { data, isLoading, error } = useSearchUsers(searchQuery);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+
+  // Debounce the search query by 5 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const { data, isLoading, error } = useSearchUsers(debouncedQuery);
 
   const users = useMemo(() => {
     if (!data) return [];

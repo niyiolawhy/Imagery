@@ -48,6 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return false;
   };
 
+  //use middleware for authentication
   useEffect(() => {
     // Check if user is logged in on app start
     checkAuthStatus();
@@ -81,6 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(token, refreshToken);
   };
 
+    
   const login = (email: string, password: string, name?: string) => {
     // Simple validation (in a real app, this would be server-side)
     if (email && password) {

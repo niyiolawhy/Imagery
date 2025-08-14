@@ -98,6 +98,7 @@ export const usePostData = (url: string) => {
             const response = await axiosInstance.post(url, arg);
             return response.data;
         },
+        
     });
 };
 
