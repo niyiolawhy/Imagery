@@ -4,6 +4,7 @@ import type React from "react"
 import { createContext, useContext, useEffect, useState, useRef } from "react";
 import { clearTokens, setToken } from "@/services/axios-instance";
 import { AuthUser } from "@/types/user";
+import { useRouter } from "next/navigation";
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -14,12 +15,13 @@ interface AuthContextType {
   checkAuthStatus: () => boolean;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const router = useRouter();
 
   const checkAuthStatus = (): boolean => {
     const token = localStorage.getItem("token");
@@ -55,12 +57,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       checkAuthStatus();
     }, 5 * 60 * 1000);
 
+    // Listen for auth errors from axios interceptor
+    const handleAuthError = (event: CustomEvent) => {
+      console.log("Auth error received:", event.detail);
+      logout();
+      router.push("/auth/login");
+    };
+
+    window.addEventListener("auth:error", handleAuthError as EventListener);
+
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
+      window.removeEventListener(
+        "auth:error",
+        handleAuthError as EventListener
+      );
     };
-  }, []);
+  }, [router]);
 
   const updateTokens = (token: string, refreshToken: string) => {
     setToken(token, refreshToken);
@@ -72,25 +87,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const userData = {
         email,
         name: name || email.split("@")[0],
-      }
+      };
 
-      setUser(userData)
-      setIsAuthenticated(true)
+      setUser(userData);
+      setIsAuthenticated(true);
 
-      localStorage.setItem("isAuthenticated", "true")
-      localStorage.setItem("userEmail", email)
-      localStorage.setItem("userName", userData.name)
+      localStorage.setItem("isAuthenticated", "true");
+      localStorage.setItem("userEmail", email);
+      localStorage.setItem("userName", userData.name);
 
-      return true
+      return true;
     }
-    return false
-  }
+    return false;
+  };
 
   const logout = () => {
-    setUser(null)
-    setIsAuthenticated(false)
+    setUser(null);
+    setIsAuthenticated(false);
     clearTokens();
-  }
+  };
 
   return (
     <AuthContext.Provider

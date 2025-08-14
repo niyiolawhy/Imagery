@@ -3,6 +3,27 @@ import { toast } from "sonner";
 
 export const baseUrl = "http://localhost:4000/";
 
+// Global flag to track if we're redirecting to login
+let isRedirectingToLogin = false;
+
+// Event emitter for auth errors
+const emitAuthError = (message: string) => {
+    if (!isRedirectingToLogin) {
+        isRedirectingToLogin = true;
+
+        // Dispatch custom event that components can listen to
+        const event = new CustomEvent('auth:error', {
+            detail: { message, timestamp: Date.now() }
+        });
+        window.dispatchEvent(event);
+
+        // Reset flag after a delay
+        setTimeout(() => {
+            isRedirectingToLogin = false;
+        }, 1000);
+    }
+};
+
 const axiosInstance = axios.create({
     baseURL: baseUrl,
     headers: {
@@ -82,7 +103,10 @@ const errorResetTimeout = 5000; // 5 seconds
 const handleError = async (error: any) => {
     if (!error.response) {
         if (error.message === "Network Error") {
-            toast.error("Network Error");
+            // Don't show toast for network errors during auth redirects
+            if (!isRedirectingToLogin) {
+                toast.error("Network Error - Please check your connection");
+            }
         }
         return Promise.reject(
             error instanceof Error ? error : new Error(error.message)
@@ -116,20 +140,16 @@ const handleError = async (error: any) => {
                 originalRequest.headers["Authorization"] = `Bearer ${newToken}`;
                 return axiosInstance(originalRequest);
             } else {
-                // Refresh failed, redirect to login
+                // Refresh failed, emit event for components to handle
                 processQueue(new Error("Token refresh failed"), null);
                 clearTokens();
-                if (window.location.pathname !== "/auth/login") {
-                    window.location.href = "/auth/login";
-                }
+                emitAuthError("Token refresh failed");
                 return Promise.reject(new Error("Authentication failed"));
             }
         } catch (refreshError) {
             processQueue(refreshError, null);
             clearTokens();
-            if (window.location.pathname !== "/auth/login") {
-                window.location.href = "/auth/login";
-            }
+            emitAuthError("Token refresh failed");
             return Promise.reject(refreshError);
         } finally {
             isRefreshing = false;

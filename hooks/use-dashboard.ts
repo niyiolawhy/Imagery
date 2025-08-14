@@ -3,11 +3,13 @@
 import { useState, useEffect } from "react"
 import { useGetAlbums } from "./use-api"
 import { Album } from "@/types/album"
+import { useAuth } from "@/contexts/auth-context"
 
 export function useDashboard() {
   const [searchTerm, setSearchTerm] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(12)
+  const { checkAuthStatus } = useAuth()
 
   // Fetch albums from API
   const {
@@ -20,6 +22,17 @@ export function useDashboard() {
     page: currentPage.toString(),
     limit: itemsPerPage.toString()
   })
+
+  // Handle auth errors
+  useEffect(() => {
+    if (albumsError) {
+      const errorMessage = albumsError.message || 'Unknown error';
+      if (errorMessage.includes('Authentication failed') || errorMessage.includes('Token refresh failed')) {
+        console.log('Auth error detected, checking auth status...');
+        checkAuthStatus();
+      }
+    }
+  }, [albumsError, checkAuthStatus]);
 
   // Filter albums based on search term
   const filteredAlbums = albumsData?.albums || []

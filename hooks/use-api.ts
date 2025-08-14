@@ -327,10 +327,28 @@ export const useGetAlbums = (query: { search?: string; page?: string; limit?: st
                 });
                 console.log('Albums response:', response);
                 return response.data.data; // Extract the nested data from the API response
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to fetch albums:', error);
+
+                // Check if it's an auth error
+                if (error.message?.includes('Authentication failed') ||
+                    error.message?.includes('Token refresh failed') ||
+                    error.response?.status === 401) {
+                    console.log('Auth error in albums fetch, will be handled by interceptor');
+                }
+
                 throw error;
             }
+        },
+        retry: (failureCount, error: any) => {
+            // Don't retry on auth errors
+            if (error.message?.includes('Authentication failed') ||
+                error.message?.includes('Token refresh failed') ||
+                error.response?.status === 401) {
+                return false;
+            }
+            // Retry up to 2 times for other errors
+            return failureCount < 2;
         },
     });
 };

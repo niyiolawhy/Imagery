@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/auth-context";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "react-hot-toast";
 import { Providers } from "@/components/providers";
+import { AuthErrorBoundary } from "@/components/auth-error-boundary";
 
 export const metadata: Metadata = {
   title: "Imagery - Photo Album App",
@@ -38,7 +39,7 @@ html {
             disableTransitionOnChange
           >
             <AuthProvider>
-              {children}
+              <AuthErrorBoundary>{children}</AuthErrorBoundary>
               <Toaster
                 position="top-right"
                 toastOptions={{

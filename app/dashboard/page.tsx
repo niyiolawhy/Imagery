@@ -6,7 +6,8 @@ import { AlbumsGrid } from "@/components/dashboard/albums-grid";
 import { CreateAlbumDialog } from "@/components/dashboard/create-album-dialog";
 import { useDashboard } from "@/hooks/use-dashboard";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, Loader2, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function DashboardPage() {
   const {
@@ -19,6 +20,7 @@ export default function DashboardPage() {
     albumsError,
     setSearchTerm,
     setCurrentPage,
+    refetchAlbums,
   } = useDashboard();
 
   // Show loading state
@@ -42,17 +44,51 @@ export default function DashboardPage() {
 
   // Show error state
   if (albumsError) {
+    const errorMessage = albumsError.message || "Unknown error";
+    const isAuthError =
+      errorMessage.includes("Authentication failed") ||
+      errorMessage.includes("Token refresh failed") ||
+      errorMessage.includes("Network Error");
+
+    if (isAuthError) {
+      // Auth errors are handled by the error boundary, show loading
+      return (
+        <AuthGuard>
+          <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="text-center">
+              <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4 text-purple-600" />
+              <h2 className="text-xl font-semibold text-gray-700">
+                Checking authentication...
+              </h2>
+              <p className="text-gray-500">
+                Please wait while we verify your session
+              </p>
+            </div>
+          </div>
+        </AuthGuard>
+      );
+    }
+
     return (
       <AuthGuard>
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="max-w-md mx-auto">
-            <Alert variant="destructive">
+          <div className="max-w-md mx-auto text-center">
+            <Alert variant="destructive" className="mb-4">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
                 Failed to load albums. Please try refreshing the page or contact
                 support if the problem persists.
               </AlertDescription>
             </Alert>
+
+            <Button
+              onClick={() => refetchAlbums()}
+              variant="outline"
+              className="w-full"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Try Again
+            </Button>
           </div>
         </div>
       </AuthGuard>
