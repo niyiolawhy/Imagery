@@ -1,7 +1,8 @@
 import axios from "axios";
 import { toast } from "sonner";
 
-export const baseUrl = "http://localhost:4000/";
+export const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/";
+
 
 // Global flag to track if we're redirecting to login
 let isRedirectingToLogin = false;
