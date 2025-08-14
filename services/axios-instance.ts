@@ -3,12 +3,16 @@ import { toast } from "sonner";
 
 export const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/";
 
+// Check if we're in a browser environment
+const isBrowser = typeof window !== "undefined";
 
 // Global flag to track if we're redirecting to login
 let isRedirectingToLogin = false;
 
 // Event emitter for auth errors
 const emitAuthError = (message: string) => {
+    if (!isBrowser) return; // Don't run on server side
+
     if (!isRedirectingToLogin) {
         isRedirectingToLogin = true;
 
@@ -33,11 +37,15 @@ const axiosInstance = axios.create({
 });
 
 export const setToken = (token: string, refreshToken: string) => {
+    if (!isBrowser) return; // Don't run on server side
+
     localStorage.setItem("token", token);
     localStorage.setItem("Refresh-token", refreshToken);
 };
 
 export const clearTokens = () => {
+    if (!isBrowser) return; // Don't run on server side
+
     localStorage.removeItem("token");
     localStorage.removeItem("Refresh-token");
     localStorage.removeItem("isAuthenticated");
@@ -46,6 +54,8 @@ export const clearTokens = () => {
 };
 
 const attachToken = (config: any) => {
+    if (!isBrowser) return config; // Don't run on server side
+
     const token = localStorage.getItem("token")?.trim();
 
     if (token) {
@@ -75,6 +85,8 @@ const processQueue = (error: any, token: string | null = null) => {
 };
 
 const refreshToken = async (): Promise<string | null> => {
+    if (!isBrowser) return null; // Don't run on server side
+
     try {
         const refreshTokenValue = localStorage.getItem("Refresh-token")?.trim();
         if (!refreshTokenValue) {
@@ -105,7 +117,7 @@ const handleError = async (error: any) => {
     if (!error.response) {
         if (error.message === "Network Error") {
             // Don't show toast for network errors during auth redirects
-            if (!isRedirectingToLogin) {
+            if (!isRedirectingToLogin && isBrowser) {
                 toast.error("Network Error - Please check your connection");
             }
         }
@@ -168,7 +180,7 @@ const handleError = async (error: any) => {
         messages[status as keyof typeof messages] ||
         "An unexpected error occurred.";
 
-    if (!isShowingError) {
+    if (!isShowingError && isBrowser) {
         isShowingError = true;
 
         toast.error(errorMessage, {
@@ -183,7 +195,10 @@ const handleError = async (error: any) => {
     return Promise.reject(new Error(errorMessage));
 };
 
-axiosInstance.interceptors.request.use(attachToken, Promise.reject);
-axiosInstance.interceptors.response.use((res) => res, handleError);
+// Only add interceptors in browser environment
+if (isBrowser) {
+    axiosInstance.interceptors.request.use(attachToken, Promise.reject);
+    axiosInstance.interceptors.response.use((res) => res, handleError);
+}
 
 export { axiosInstance };

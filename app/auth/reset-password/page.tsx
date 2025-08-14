@@ -1,13 +1,19 @@
 "use client";
 
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import toast from "react-hot-toast";
 import Link from "next/link";
 import { usePostData } from "@/hooks/use-api";
@@ -19,7 +25,10 @@ const ResetPasswordSchema = Yup.object().shape({
     .matches(/[a-z]/, "Password must contain at least one lowercase letter")
     .matches(/[A-Z]/, "Password must contain at least one uppercase letter")
     .matches(/[0-9]/, "Password must contain at least one number")
-    .matches(/[^a-zA-Z0-9]/, "Password must contain at least one special character")
+    .matches(
+      /[^a-zA-Z0-9]/,
+      "Password must contain at least one special character"
+    )
     .required("Password is required"),
 });
 
@@ -28,7 +37,7 @@ interface ResetPasswordFormValues {
   password: string;
 }
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const searchParams = useSearchParams();
   const token = searchParams?.get("token");
   const [resetSuccess, setResetSuccess] = useState(false);
@@ -49,7 +58,10 @@ export default function ResetPasswordPage() {
     { setSubmitting, resetForm }: any
   ) => {
     try {
-      await resetPasswordMutation.mutateAsync({ token, password: values.password });
+      await resetPasswordMutation.mutateAsync({
+        token,
+        password: values.password,
+      });
       toast.success("Password reset successful! You can now log in.");
       setResetSuccess(true);
       resetForm();
@@ -85,15 +97,18 @@ export default function ResetPasswordPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Reset Password</CardTitle>
-          <CardDescription>
-            Enter your new password below.
-          </CardDescription>
+          <CardDescription>Enter your new password below.</CardDescription>
         </CardHeader>
         <CardContent>
           {resetSuccess ? (
             <div className="text-center space-y-4">
-              <p className="text-green-600 font-semibold">Your password has been reset successfully!</p>
-              <Link href="/auth/login" className="text-purple-600 hover:underline">
+              <p className="text-green-600 font-semibold">
+                Your password has been reset successfully!
+              </p>
+              <Link
+                href="/auth/login"
+                className="text-purple-600 hover:underline"
+              >
                 Go to Login
               </Link>
             </div>
@@ -135,5 +150,19 @@ export default function ResetPasswordPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-600"></div>
+        </div>
+      }
+    >
+      <ResetPasswordContent />
+    </Suspense>
   );
 }
